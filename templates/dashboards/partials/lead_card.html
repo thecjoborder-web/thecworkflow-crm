@@ -1,0 +1,78 @@
+<!-- Lead Card Partial Template -->
+<div class="lead-card" data-lead-id="{{ lead.id }}">
+    
+    <!-- Lead Header with Name and Status -->
+    <div class="lead-header">
+        <div class="lead-info">
+            <div class="lead-name">{{ lead.full_name }}</div>
+            <div class="lead-meta">
+                {% if lead.email %}
+                    📧 {{ lead.email }}<br>
+                {% endif %}
+                {% if lead.phone %}
+                    ☎️ {{ lead.phone }}
+                {% endif %}
+                {% if lead.source %}
+                    <br>📍 Source: {{ lead.get_source_display }}
+                {% endif %}
+            </div>
+        </div>
+        <span class="lead-status {{ lead.status }}">
+            {{ lead.get_status_display }}
+        </span>
+    </div>
+
+    <!-- Contact Action Buttons -->
+    <div class="contact-buttons">
+        {% if lead.phone %}
+            <button type="button" class="btn btn-whatsapp" 
+                    onclick="window.open('https://wa.me/{{ lead.phone }}', '_blank'); return false;">
+                💬 WhatsApp
+            </button>
+            <a href="tel:{{ lead.phone }}" class="btn btn-call">
+                ☎️ Call
+            </a>
+        {% endif %}
+
+        {% if lead.email %}
+            <a href="mailto:{{ lead.email }}" class="btn btn-email">
+                ✉️ Email
+            </a>
+        {% endif %}
+
+        <button type="button" class="btn btn-note add-note-btn">
+            📝 Add Note
+        </button>
+    </div>
+
+    <!-- Stage Progression Buttons (Strict Control) -->
+    <div class="stage-buttons">
+        {% if lead.status == "assigned" %}
+            <button class="stage-btn" data-stage="contacted">→ Mark Contacted</button>
+        {% endif %}
+
+        {% if lead.status == "contacted" %}
+            <button class="stage-btn" data-stage="awaiting">→ Move to Awaiting</button>
+        {% endif %}
+
+        {% if lead.status == "awaiting" %}
+            <button class="stage-btn" data-stage="closed">✓ Mark Closed</button>
+            <button class="stage-btn danger" data-stage="lost">✗ Mark Lost</button>
+        {% endif %}
+
+        {% if lead.status == "closed" or lead.status == "lost" %}
+            <span style="color: #999; font-size: 12px; padding: 8px;">
+                ✓ Final Stage - No Further Actions
+            </span>
+        {% endif %}
+    </div>
+
+    <!-- Activities Timeline Section -->
+    <div class="activities-section">
+        <div class="activities-title">📋 Activity Timeline</div>
+        <div class="activities-list" data-lead-id="{{ lead.id }}">
+            <div class="no-activities">Loading activities...</div>
+        </div>
+    </div>
+
+</div>

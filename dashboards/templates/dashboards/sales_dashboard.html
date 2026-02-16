@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>My Assigned Leads</h2>
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:25px;">
+
+<!-- LEADS LIST -->
+<table>
+    <tr>
+        <th>Name</th>
+        <th>Company</th>
+        <th>Status</th>
+        <th>Actions</th>
+    </tr>
+    {% for lead in leads %}
+    <tr>
+       <td>
+    <span class="badge badge-{{ lead.status }}">
+        {{ lead.get_status_display }}
+    </span>
+
+    {% if lead.status != "contacted" and lead.status != "closed" %}
+        <form method="post"
+              action="{% url 'dashboards:mark_lead_contacted' lead.id %}"
+              style="display:inline;">
+            {% csrf_token %}
+            <button type="submit"
+                    style="
+                        margin-left:8px;
+                        background:#cc0000;
+                        color:#ffffff;
+                        border:none;
+                        padding:4px 10px;
+                        font-size:11px;
+                        cursor:pointer;">
+                Mark Contacted
+            </button>
+        </form>
+    {% endif %}
+</td>
+
+    </tr>
+    {% endfor %}
+</table>
+
+<!-- LEAD DETAILS -->
+{% if selected_lead %}
+<div>
+
+<h3>{{ selected_lead.name }}</h3>
+<p>{{ selected_lead.email }} | {{ selected_lead.phone }}</p>
+
+<!-- QUICK ACTIONS -->
+<p>
+    <a href="tel:{{ selected_lead.phone }}">📞 Call</a> |
+    <a href="https://wa.me/2348167341862?text=Hello {{ selected_lead.name }}" target="_blank">💬 WhatsApp</a> |
+    <a href="mailto:{{ selected_lead.email }}">✉ Email</a>
+</p>
+
+<!-- PIPELINE -->
+<form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="lead_id" value="{{ selected_lead.id }}">
+    <select name="stage">
+        <option value="new">New</option>
+        <option value="contacted">Contacted</option>
+        <option value="proposal">Proposal</option>
+        <option value="negotiation">Negotiation</option>
+        <option value="closed">Closed</option>
+    </select>
+    <button type="submit">Update Stage</button>
+</form>
+
+<!-- ADD NOTE -->
+<form method="post" style="margin-top:15px;">
+    {% csrf_token %}
+    <input type="hidden" name="lead_id" value="{{ selected_lead.id }}">
+    <textarea name="note_text" rows="3" placeholder="Add internal note..." required></textarea>
+    <br>
+    <button type="submit">Save Note</button>
+</form>
+
+<!-- ACTIVITY TIMELINE -->
+<h4>Activity Timeline</h4>
+<ul>
+{% for activity in selected_lead.activities.all %}
+    <li>
+        <strong>{{ activity.activity_type }}</strong> —
+        {{ activity.message }}<br>
+        <small>{{ activity.created_at }}</small>
+    </li>
+{% empty %}
+    <li>No activity yet.</li>
+{% endfor %}
+</ul>
+
+</div>
+{% endif %}
+
+</div>
+
+{% endblock %}

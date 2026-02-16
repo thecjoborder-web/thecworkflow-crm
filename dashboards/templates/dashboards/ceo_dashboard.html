@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CEO Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            padding: 30px;
+        }
+        h1 {
+            margin-bottom: 30px;
+        }
+        .kpi-container {
+            display: flex;
+            gap: 20px;
+        }
+        .kpi-card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            width: 220px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .kpi-card h2 {
+            margin: 0;
+            font-size: 36px;
+            color: #007bff;
+        }
+        .kpi-card p {
+            margin: 10px 0 0;
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+<h1>CEO Dashboard</h1>
+
+<div class="kpi-container">
+    <div class="kpi-card">
+        <h2>{{ total_leads }}</h2>
+        <p>Total Leads</p>
+    </div>
+
+    <div class="kpi-card">
+        <h2>{{ assigned_leads }}</h2>
+        <p>Assigned Leads</p>
+    </div>
+
+    <div class="kpi-card">
+        <h2>{{ unassigned_leads }}</h2>
+        <p>Unassigned Leads</p>
+    </div>
+</div>
+
+</body>
+</html>

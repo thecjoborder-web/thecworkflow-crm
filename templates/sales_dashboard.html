@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>My Assigned Leads</h2>
+
+<!-- ✅ THIS ENSURES CSRF COOKIE EXISTS -->
+<form style="display:none;">
+    {% csrf_token %}
+</form>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f5f5f5;
+    }
+
+    .lead-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .lead-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .lead-name {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .lead-status {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+        color: white;
+    }
+
+    .lead-status.new { background-color: #2196F3; }
+    .lead-status.contacted { background-color: #FF9800; }
+    .lead-status.qualified { background-color: #4CAF50; }
+    .lead-status.closed { background-color: #8BC34A; }
+    .lead-status.awaiting { background-color: #F44336; }
+
+    .contact-buttons {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: bold;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: opacity 0.2s;
+    }
+
+    .btn:hover {
+        opacity: 0.8;
+    }
+
+    .btn-whatsapp {
+        background-color: #25D366;
+        color: white;
+    }
+
+    .btn-call {
+        background-color: #2196F3;
+        color: white;
+    }
+
+    .btn-email {
+        background-color: #EA4335;
+        color: white;
+    }
+
+    .btn-note {
+        background-color: #9C27B0;
+        color: white;
+    }
+
+    .btn-contacted {
+        background-color: #795548;
+        color: white;
+    }
+
+    .activities-section {
+        background-color: #f9f9f9;
+        border: 1px solid #eee;
+        border-radius: 4px;
+        padding: 12px;
+        margin-top: 12px;
+    }
+
+    .activities-title {
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #666;
+    }
+
+    .activity {
+        background: white;
+        padding: 8px;
+        margin-bottom: 8px;
+        border-left: 3px solid #2196F3;
+        border-radius: 2px;
+        font-size: 13px;
+    }
+
+    .activity.note {
+        border-left-color: #9C27B0;
+    }
+
+    .activity-type {
+        font-weight: bold;
+        color: #2196F3;
+        font-size: 11px;
+        text-transform: uppercase;
+    }
+
+    .activity.note .activity-type {
+        color: #9C27B0;
+    }
+
+    .activity-message {
+        margin: 4px 0;
+        color: #333;
+    }
+
+    .activity-meta {
+        font-size: 11px;
+        color: #999;
+    }
+
+    .no-activities {
+        color: #999;
+        font-size: 13px;
+        font-style: italic;
+    }
+
+    .loading {
+        color: #999;
+        font-size: 13px;
+    }
+</style>
+
+<div id="leads-container">
+    {% for lead in leads %}
+    <div class="lead-card" data-lead-id="{{ lead.id }}">
+        <div class="lead-header">
+            <div>
+                <div class="lead-name">{{ lead.full_name }}</div>
+                <small style="color: #999;">
+                    {% if lead.email %}
+                        {{ lead.email }}<br>
+                    {% endif %}
+                    {% if lead.phone %}
+                        {{ lead.phone }}
+                    {% endif %}
+                </small>
+            </div>
+            <span class="lead-status {{ lead.status }}">
+                {{ lead.get_status_display }}
+            </span>
+        </div>
+
+        <!-- Contact Buttons -->
+        <div class="contact-buttons">
+            {% if lead.phone %}
+                <a href="https://wa.me/{{ lead.phone }}" target="_blank" class="btn btn-whatsapp">
+                    💬 WhatsApp
+                </a>
+                <a href="tel:{{ lead.phone }}" class="btn btn-call">
+                    ☎️ Call
+                </a>
+            {% endif %}
+
+            {% if lead.email %}
+                <a href="mailto:{{ lead.email }}" class="btn btn-email">
+                    ✉️ Email
+                </a>
+            {% endif %}
+
+            <button type="button" class="btn btn-note add-note-btn">
+                📝 Add Note
+            </button>
+
+            {% if lead.status != "contacted" %}
+                <button type="button" class="btn btn-contacted mark-contacted-btn">
+                    ✓ Mark Contacted
+                </button>
+            {% endif %}
+        </div>
+
+        <!-- Activities Section -->
+        <div class="activities-section">
+            <div class="activities-title">📋 Activity Timeline</div>
+            <div class="activities-list" data-lead-id="{{ lead.id }}">
+                <div class="loading">Loading activities...</div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- NOTE MODAL -->
+<div id="note-modal"
+     style="display:none; position:fixed; top:30%; left:50%; transform: translate(-50%, -50%);
+     background:#fff; padding:20px; border:1px solid #ccc; z-index:1000; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); min-width: 400px;">
+    <h3>Add Note</h3>
+    <textarea id="note-content" rows="4" cols="50" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: Arial;"></textarea><br><br>
+    <div style="text-align: right; gap: 8px; display: flex; justify-content: flex-end;">
+        <button id="save-note-btn" class="btn btn-note" style="margin: 0;">Save</button>
+        <button id="cancel-note-btn" class="btn" style="background-color: #999; color: white; margin: 0;">Cancel</button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// --------------------
+// CSRF Helper
+// --------------------
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
+
+// --------------------
+// Load Activities for All Leads
+// --------------------
+function loadActivities(leadId) {
+    const activitiesDiv = document.querySelector(
+        `.activities-list[data-lead-id="${leadId}"]`
+    );
+
+    fetch(`/dashboards/lead/${leadId}/activities/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.activities.length === 0) {
+                activitiesDiv.innerHTML = '<div class="no-activities">No activities yet</div>';
+            } else {
+                activitiesDiv.innerHTML = data.activities.map(activity => `
+                    <div class="activity ${activity.activity_type === 'note' ? 'note' : ''}">
+                        <span class="activity-type">${activity.activity_type}</span>
+                        <div class="activity-message">${escapeHtml(activity.message)}</div>
+                        <div class="activity-meta">By ${escapeHtml(activity.created_by)} • ${activity.created_at}</div>
+                    </div>
+                `).join('');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading activities:', error);
+            activitiesDiv.innerHTML = '<div class="no-activities">Error loading activities</div>';
+        });
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Load activities for all leads on page load
+document.querySelectorAll('.lead-card').forEach(card => {
+    const leadId = card.dataset.leadId;
+    loadActivities(leadId);
+});
+
+// --------------------
+// Mark Contacted
+// --------------------
+document.querySelectorAll('.mark-contacted-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+        const card = e.target.closest('.lead-card');
+        const leadId = card.dataset.leadId;
+
+        const response = await fetch("{% url 'dashboards:log_activity' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({
+                lead_id: leadId,
+                activity_type: 'contacted',
+                message: 'Lead marked as contacted'
+            })
+        });
+
+        if (response.ok) {
+            card.querySelector('.lead-status').textContent = 'Contacted';
+            card.querySelector('.lead-status').className = 'lead-status contacted';
+            e.target.remove();
+            loadActivities(leadId);
+        } else {
+            alert("Error updating lead.");
+        }
+    });
+});
+
+// --------------------
+// Add Note
+// --------------------
+let currentLeadId = null;
+
+document.querySelectorAll('.add-note-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const card = e.target.closest('.lead-card');
+        currentLeadId = card.dataset.leadId;
+        document.getElementById('note-content').value = '';
+        document.getElementById('note-modal').style.display = 'block';
+    });
+});
+
+document.getElementById('cancel-note-btn').addEventListener('click', () => {
+    document.getElementById('note-modal').style.display = 'none';
+});
+
+document.getElementById('save-note-btn').addEventListener('click', async () => {
+    const content = document.getElementById('note-content').value;
+
+    if (!content.trim()) {
+        alert("Note cannot be empty");
+        return;
+    }
+
+    const response = await fetch("{% url 'dashboards:log_activity' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            lead_id: currentLeadId,
+            activity_type: 'note',
+            message: content
+        })
+    });
+
+    if (response.ok) {
+        alert("Note saved successfully.");
+        document.getElementById('note-modal').style.display = 'none';
+        loadActivities(currentLeadId);
+    } else {
+        alert("Error saving note.");
+    }
+});
+
+// Close modal when clicking outside
+document.getElementById('note-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'note-modal') {
+        document.getElementById('note-modal').style.display = 'none';
+    }
+});
+</script>
+{% endblock %}
+
