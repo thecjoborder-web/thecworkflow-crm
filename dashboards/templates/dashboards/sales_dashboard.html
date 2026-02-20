@@ -54,7 +54,11 @@
 <!-- QUICK ACTIONS -->
 <p>
     <a href="tel:{{ selected_lead.phone }}">📞 Call</a> |
-    <a href="https://wa.me/2348167341862?text=Hello {{ selected_lead.name }}" target="_blank">💬 WhatsApp</a> |
+    
+    <a href="https://wa.me/{{ selected_lead.phone|cut:'+'|cut:' ' }}?text=Hello%20{{ selected_lead.name|urlencode }}" target="_blank">
+        💬 WhatsApp
+    </a> |
+    
     <a href="mailto:{{ selected_lead.email }}">✉ Email</a>
 </p>
 
