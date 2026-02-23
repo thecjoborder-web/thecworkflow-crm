@@ -26,7 +26,7 @@
     <div class="contact-buttons">
         {% if lead.phone %}
             <button type="button" class="btn btn-whatsapp" 
-                    onclick="window.open('https://wa.me/{{ lead.phone }}', '_blank'); return false;">
+                    onclick="openWhatsApp('{{ lead.phone|escapejs }}','{{ lead.full_name|escapejs }}'); return false;">
                 💬 WhatsApp
             </button>
             <a href="tel:{{ lead.phone }}" class="btn btn-call">

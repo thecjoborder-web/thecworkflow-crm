@@ -54,10 +54,9 @@
 <!-- QUICK ACTIONS -->
 <p>
     <a href="tel:{{ selected_lead.phone }}">📞 Call</a> |
-    
-   {# use wa.me link to let WhatsApp choose the proper client and avoid web.whatsapp load issues #}
-   <a href="https://wa.me/234{{ selected_lead.phone|slice:'1:' }}?text=Hello%20{{ selected_lead.name|urlencode }}" target="_blank" rel="noopener noreferrer"> 💬 WhatsApp </a>
-    
+
+   <a href="#" onclick="openWhatsApp('234{{ selected_lead.phone|slice:'1:' }}','{{ selected_lead.name|escapejs }}'); return false;"> 💬 WhatsApp </a>
+
     <a href="mailto:{{ selected_lead.email }}">✉ Email</a>
 </p>
 
@@ -103,4 +102,20 @@
 
 </div>
 
+{% block extra_scripts %}
+<script>
+function openWhatsApp(phone, name){
+    var text = encodeURIComponent('Hello ' + (name || ''));
+    var isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
+    var url;
+    if(isMobile){
+        url = 'https://wa.me/' + phone + '?text=' + text;
+        window.open(url, '_blank');
+    } else {
+        // open in a named window so repeated clicks reuse the same tab
+        url = 'https://web.whatsapp.com/send?phone=' + phone + '&text=' + text;
+        window.open(url, 'whatsapp');
+    }
+}
+</script>
 {% endblock %}
