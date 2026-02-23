@@ -635,6 +635,43 @@ function getCookie(name) {
 }
 const csrftoken = getCookie('csrftoken');
 
+// ==================== WhatsApp helper ====================
+function openWhatsApp(phone, name){
+    try {
+        var text = encodeURIComponent('Hello ' + (name || ''));
+        var isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
+        // Always use wa.me which reliably redirects to the correct client
+        var url = 'https://wa.me/' + phone + '?text=' + text;
+
+        // If we have a previously opened reference (from this page), try to reuse it
+        try {
+            if (!window.__whatsappWindow || window.__whatsappWindow.closed) {
+                window.__whatsappWindow = window.open(url, 'thec_whatsapp_window');
+            } else {
+                // If reference exists, update its location to the new chat and focus it
+                try {
+                    window.__whatsappWindow.location.href = url;
+                } catch (innerErr) {
+                    // cross-origin assignment may fail in some browsers; fall back to reopening
+                    window.__whatsappWindow = window.open(url, 'thec_whatsapp_window');
+                }
+                window.__whatsappWindow.focus();
+            }
+            // On mobile open a new tab/window instead of reusing
+            if(isMobile){
+                // Mobile browsers typically open app or chooser; ensure a new tab
+                window.open(url, '_blank');
+            }
+        } catch (winErr) {
+            console.error('whatsapp window reuse failed', winErr);
+            window.open(url, '_blank');
+        }
+    } catch (e) {
+        console.error('openWhatsApp error', e);
+        window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(name || ''), '_blank');
+    }
+}
+
 // Helper: Escape HTML to prevent XSS
 function escapeHtml(text) {
     const div = document.createElement('div');
