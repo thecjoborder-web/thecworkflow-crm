@@ -55,7 +55,8 @@
 <p>
     <a href="tel:{{ selected_lead.phone }}">📞 Call</a> |
     
-   <a href="https://web.whatsapp.com/send?phone=234{{ selected_lead.phone|slice:'1:' }}&text=Hello%20{{ selected_lead.name|urlencode }}"> 💬 WhatsApp </a>
+   {# use wa.me link to let WhatsApp choose the proper client and avoid web.whatsapp load issues #}
+   <a href="https://wa.me/234{{ selected_lead.phone|slice:'1:' }}?text=Hello%20{{ selected_lead.name|urlencode }}" target="_blank" rel="noopener noreferrer"> 💬 WhatsApp </a>
     
     <a href="mailto:{{ selected_lead.email }}">✉ Email</a>
 </p>
