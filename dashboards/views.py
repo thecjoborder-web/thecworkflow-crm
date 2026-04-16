@@ -338,15 +338,181 @@ def is_ceo(user):
 @login_required
 @user_passes_test(is_ceo)
 def ceo_dashboard(request):
+    """
+    CEO Dashboard with comprehensive metrics:
+    1. Real-time metrics: Total leads, Completed vs Pending, Delayed, Per-user
+    2. Staff Performance: Projects per user, Completion rate, Activity frequency
+    3. Activity Feed: Recent actions, Who did what
+    4. Alerts: Missed deadlines, Inactive users, Bottlenecks
+    """
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    # ===== 📊 REAL-TIME METRICS =====
+    
+    # Total Project Metrics
     total_leads = Lead.objects.count()
-    assigned_leads = Lead.objects.exclude(assigned_to=None).count()
-    unassigned_leads = Lead.objects.filter(assigned_to=None).count()
-
+    completed_leads = Lead.objects.filter(status__in=['closed']).count()
+    pending_leads = Lead.objects.exclude(status__in=['closed', 'lost']).count()
+    lost_leads = Lead.objects.filter(status='lost').count()
+    
+    # Calculate completion percentage
+    completion_rate = (
+        (completed_leads / total_leads) * 100 if total_leads > 0 else 0
+    )
+    
+    # Delayed projects (awaiting for more than 7 days)
+    seven_days_ago = timezone.now() - timedelta(days=7)
+    delayed_leads = Lead.objects.filter(
+        status='awaiting',
+        awaiting_at__lt=seven_days_ago
+    ).count()
+    
+    # ===== 👥 STAFF PERFORMANCE =====
+    
+    # Get all sales agents
+    sales_agents = User.objects.filter(groups__name='sales_agent')
+    
+    staff_performance = []
+    total_activities_all_users = 0
+    
+    for agent in sales_agents:
+        # Leads handled by this agent
+        agent_leads = Lead.objects.filter(assigned_to=agent)
+        agent_completed = agent_leads.filter(status__in=['closed']).count()
+        agent_total = agent_leads.count()
+        agent_completion_rate = (
+            (agent_completed / agent_total) * 100 if agent_total > 0 else 0
+        )
+        
+        # Activity frequency (activities in last 7 days)
+        last_week = timezone.now() - timedelta(days=7)
+        agent_activities = LeadActivity.objects.filter(
+            user=agent,
+            created_at__gte=last_week
+        ).count()
+        total_activities_all_users += agent_activities
+        
+        # Last activity timestamp
+        last_activity = LeadActivity.objects.filter(user=agent).order_by('-created_at').first()
+        last_activity_time = last_activity.created_at if last_activity else None
+        
+        staff_performance.append({
+            'agent': agent,
+            'full_name': f"{agent.first_name} {agent.last_name}" if agent.first_name else agent.username,
+            'leads_handled': agent_total,
+            'completed': agent_completed,
+            'completion_rate': round(agent_completion_rate, 1),
+            'activities_7days': agent_activities,
+            'last_activity': last_activity_time,
+        })
+    
+    # ===== 🧾 ACTIVITY FEED (Recent Actions) =====
+    
+    recent_activities = LeadActivity.objects.select_related('user', 'lead').order_by('-created_at')[:10]
+    
+    activity_feed = []
+    for activity in recent_activities:
+        display_type = {
+            'call': '☎️ Call',
+            'whatsapp': '💬 WhatsApp',
+            'email': '✉️ Email',
+            'note': '📝 Note',
+            'status': '🔄 Status Change'
+        }.get(activity.activity_type, activity.activity_type)
+        
+        activity_feed.append({
+            'user': activity.user.username if activity.user else 'Unknown',
+            'action': display_type,
+            'lead': activity.lead.full_name,
+            'message': activity.message[:50] + ('...' if len(activity.message) > 50 else ''),
+            'time': activity.created_at,
+        })
+    
+    # ===== 🚨 ALERTS & BOTTLENECKS =====
+    
+    # 1. Missed Deadlines: Leads in awaiting status for more than 7 days
+    alerts = []
+    
+    bottleneck_leads = Lead.objects.filter(
+        status='awaiting',
+        awaiting_at__lte=seven_days_ago
+    ).select_related('assigned_to').order_by('awaiting_at')
+    
+    for lead in bottleneck_leads[:5]:  # Show top 5
+        days_stuck = (timezone.now() - lead.awaiting_at).days
+        alerts.append({
+            'type': 'bottleneck',
+            'icon': '⚠️',
+            'title': f'Bottleneck: {lead.full_name}',
+            'description': f'Stuck in awaiting for {days_stuck} days',
+            'assigned_to': f"{lead.assigned_to.first_name} {lead.assigned_to.last_name}" if lead.assigned_to and lead.assigned_to.first_name else (lead.assigned_to.username if lead.assigned_to else 'Unassigned'),
+        })
+    
+    # 2. Inactive Users: No activity in last 7 days
+    for agent in sales_agents:
+        last_activity_time = LeadActivity.objects.filter(user=agent).order_by('-created_at').first()
+        
+        if not last_activity_time or (timezone.now() - last_activity_time.created_at).days > 7:
+            if last_activity_time:
+                days_inactive = (timezone.now() - last_activity_time.created_at).days
+            else:
+                days_inactive = 999  # Never had activity
+            
+            alerts.append({
+                'type': 'inactive',
+                'icon': '😴',
+                'title': f'Inactive: {agent.first_name} {agent.last_name}' if agent.first_name else f'Inactive: {agent.username}',
+                'description': f'No activity for {days_inactive} days',
+                'assigned_to': agent.username,
+            })
+    
+    # ===== 📈 ADDITIONAL METRICS =====
+    
+    # Leads created today
+    today = timezone.now().date()
+    leads_created_today = Lead.objects.filter(created_at__date=today).count()
+    
+    # Activities today
+    activities_today = LeadActivity.objects.filter(created_at__date=today).count()
+    
+    # Most active user (by activity count today)
+    most_active_user = None
+    most_active_count = 0
+    for agent in sales_agents:
+        today_activities = LeadActivity.objects.filter(user=agent, created_at__date=today).count()
+        if today_activities > most_active_count:
+            most_active_count = today_activities
+            most_active_user = agent
+    
     context = {
+        # Real-time metrics
         'total_leads': total_leads,
-        'assigned_leads': assigned_leads,
-        'unassigned_leads': unassigned_leads,
+        'completed_leads': completed_leads,
+        'pending_leads': pending_leads,
+        'lost_leads': lost_leads,
+        'completion_rate': round(completion_rate, 1),
+        'delayed_leads': delayed_leads,
+        
+        # Staff performance
+        'staff_performance': staff_performance,
+        'total_agents': sales_agents.count(),
+        'total_activities_7days': total_activities_all_users,
+        
+        # Activity feed
+        'activity_feed': activity_feed,
+        
+        # Alerts
+        'alerts': alerts,
+        'alert_count': len(alerts),
+        
+        # Today's stats
+        'leads_created_today': leads_created_today,
+        'activities_today': activities_today,
+        'most_active_user': most_active_user,
+        'most_active_count': most_active_count,
     }
+    
     return render(request, 'dashboards/ceo_dashboard.html', context)
 
 

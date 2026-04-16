@@ -154,8 +154,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Use your custom login page (NOT admin)
 LOGIN_URL = '/accounts/login/'
 
-# After successful login, go to dashboard
-LOGIN_REDIRECT_URL = '/dashboard/sales/'
+# After successful login, go to smart dashboard router (checks user role)
+LOGIN_REDIRECT_URL = '/'
 
 # After logout, go back to login page
 LOGOUT_REDIRECT_URL = '/accounts/login/'

@@ -1,61 +1,551 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>CEO Dashboard</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
-            padding: 30px;
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f5f7fa;
+        color: #333;
+    }
+
+    .dashboard-header {
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+    }
+
+    .dashboard-title {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .dashboard-subtitle {
+        font-size: 14px;
+        opacity: 0.9;
+    }
+
+    /* ==================== KPI GRID ==================== */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+
+    .kpi-card {
+        background: white;
+        border-left: 4px solid #E53935;
+        border-radius: 8px;
+        padding: 25px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    .kpi-label {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #999;
+        margin-bottom: 10px;
+        letter-spacing: 0.5px;
+    }
+
+    .kpi-value {
+        font-size: 36px;
+        font-weight: 700;
+        color: #E53935;
+        margin-bottom: 5px;
+    }
+
+    .kpi-detail {
+        font-size: 12px;
+        color: #666;
+    }
+
+    /* ==================== SECTION ==================== */
+    .section {
+        background: white;
+        border-radius: 8px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1a1a1a;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #E53935;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* ==================== METRICS TABLE ==================== */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 0;
+    }
+
+    thead {
+        background-color: #f5f5f5;
+        border-bottom: 2px solid #E53935;
+    }
+
+    th {
+        padding: 15px;
+        text-align: left;
+        font-weight: 600;
+        color: #333;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    tbody tr {
+        border-bottom: 1px solid #e0e0e0;
+        transition: background-color 0.2s;
+    }
+
+    tbody tr:hover {
+        background-color: #f9f9f9;
+    }
+
+    td {
+        padding: 15px;
+        color: #666;
+        font-size: 13px;
+    }
+
+    .agent-name {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .stat-value {
+        font-weight: 700;
+        color: #E53935;
+        font-size: 14px;
+    }
+
+    .completion-rate-good {
+        color: #4CAF50;
+        font-weight: 700;
+    }
+
+    .completion-rate-poor {
+        color: #F44336;
+        font-weight: 700;
+    }
+
+    /* ==================== ALERT BOXES ==================== */
+    .alerts-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .alert-box {
+        border-left: 4px solid #F44336;
+        background: #FFF5F5;
+        padding: 15px;
+        border-radius: 4px;
+        font-size: 13px;
+    }
+
+    .alert-box.bottleneck {
+        border-left-color: #FF9800;
+        background: #FFF8F0;
+    }
+
+    .alert-box.inactive {
+        border-left-color: #9E9E9E;
+        background: #F5F5F5;
+    }
+
+    .alert-icon {
+        font-size: 18px;
+        margin-right: 10px;
+        display: inline-block;
+    }
+
+    .alert-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 4px;
+    }
+
+    .alert-description {
+        color: #666;
+        font-size: 12px;
+    }
+
+    .alert-user {
+        color: #999;
+        font-size: 11px;
+        margin-top: 8px;
+        font-style: italic;
+    }
+
+    .no-alerts {
+        padding: 30px;
+        text-align: center;
+        color: #999;
+        background: #f9f9f9;
+        border-radius: 4px;
+        border: 2px dashed #ddd;
+    }
+
+    /* ==================== ACTIVITY FEED ==================== */
+    .activity-item {
+        display: flex;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #e0e0e0;
+        font-size: 13px;
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-time {
+        color: #999;
+        font-size: 11px;
+        min-width: 60px;
+    }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-user {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .activity-action {
+        color: #E53935;
+        font-weight: 600;
+        margin: 0 4px;
+    }
+
+    .activity-lead {
+        font-weight: 600;
+    }
+
+    .activity-message {
+        color: #666;
+        margin-top: 4px;
+    }
+
+    .no-activities {
+        padding: 20px;
+        text-align: center;
+        color: #999;
+        font-style: italic;
+    }
+
+    /* ==================== GRID LAYOUTS ==================== */
+    .grid-2col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+    }
+
+    /* ==================== RESPONSIVE ==================== */
+    @media (max-width: 1024px) {
+        .kpi-grid {
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
         }
-        h1 {
-            margin-bottom: 30px;
+
+        .grid-2col {
+            grid-template-columns: 1fr;
         }
-        .kpi-container {
-            display: flex;
-            gap: 20px;
+
+        .alerts-container {
+            grid-template-columns: 1fr;
         }
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-header {
+            padding: 20px;
+        }
+
+        .dashboard-title {
+            font-size: 24px;
+        }
+
+        .kpi-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
         .kpi-card {
-            background: white;
-            padding: 25px;
-            border-radius: 8px;
-            width: 220px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-            text-align: center;
+            padding: 15px;
         }
-        .kpi-card h2 {
-            margin: 0;
-            font-size: 36px;
-            color: #007bff;
+
+        .kpi-value {
+            font-size: 28px;
         }
-        .kpi-card p {
-            margin: 10px 0 0;
-            font-size: 14px;
-            color: #555;
+
+        table {
+            font-size: 12px;
         }
-    </style>
-</head>
-<body>
 
-<h1>CEO Dashboard</h1>
+        th, td {
+            padding: 10px;
+        }
+    }
 
-<div class="kpi-container">
-    <div class="kpi-card">
-        <h2>{{ total_leads }}</h2>
-        <p>Total Leads</p>
-    </div>
+    .empty-state {
+        padding: 40px;
+        text-align: center;
+        color: #999;
+        background: #f9f9f9;
+        border-radius: 8px;
+        border: 2px dashed #ddd;
+    }
 
-    <div class="kpi-card">
-        <h2>{{ assigned_leads }}</h2>
-        <p>Assigned Leads</p>
-    </div>
+    /* ==================== BADGES ==================== */
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
 
-    <div class="kpi-card">
-        <h2>{{ unassigned_leads }}</h2>
-        <p>Unassigned Leads</p>
+    .badge-good {
+        background: #E8F5E9;
+        color: #2e7d32;
+    }
+
+    .badge-warning {
+        background: #FFF8E1;
+        color: #F57F17;
+    }
+
+    .badge-critical {
+        background: #FFEBEE;
+        color: #C62828;
+    }
+</style>
+
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <div class="dashboard-title">👑 CEO Dashboard</div>
+    <div class="dashboard-subtitle">Real-time metrics, staff performance, and operational alerts</div>
+</div>
+
+<!-- ==================== REAL-TIME METRICS ==================== -->
+<div class="section">
+    <div class="section-title">📊 Real-Time Metrics</div>
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-label">📌 Total Projects/Leads</div>
+            <div class="kpi-value">{{ total_leads }}</div>
+            <div class="kpi-detail">All leads in system</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">✅ Completed Projects</div>
+            <div class="kpi-value">{{ completed_leads }}</div>
+            <div class="kpi-detail">Closed deals</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">⏳ Pending Projects</div>
+            <div class="kpi-value">{{ pending_leads }}</div>
+            <div class="kpi-detail">Active in pipeline</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">❌ Lost Projects</div>
+            <div class="kpi-value">{{ lost_leads }}</div>
+            <div class="kpi-detail">Lost deals</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">📈 Completion Rate</div>
+            <div class="kpi-value">{{ completion_rate }}%</div>
+            <div class="kpi-detail">Success ratio</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">⚠️ Delayed Projects</div>
+            <div class="kpi-value">{{ delayed_leads }}</div>
+            <div class="kpi-detail">Stuck > 7 days (awaiting)</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">📥 Created Today</div>
+            <div class="kpi-value">{{ leads_created_today }}</div>
+            <div class="kpi-detail">New leads</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">📞 Activities Today</div>
+            <div class="kpi-value">{{ activities_today }}</div>
+            <div class="kpi-detail">Calls, notes, updates</div>
+        </div>
     </div>
 </div>
 
-</body>
-</html>
+<!-- ==================== STAFF PERFORMANCE ==================== -->
+<div class="section">
+    <div class="section-title">👥 Staff Performance & Productivity</div>
+
+    {% if staff_performance %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Agent Name</th>
+                    <th>Projects Handled</th>
+                    <th>Completed</th>
+                    <th>Completion Rate</th>
+                    <th>Activities (7 days)</th>
+                    <th>Last Activity</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for perf in staff_performance %}
+                <tr>
+                    <td class="agent-name">{{ perf.full_name }}</td>
+                    <td><span class="stat-value">{{ perf.leads_handled }}</span></td>
+                    <td><span class="stat-value">{{ perf.completed }}</span></td>
+                    <td>
+                        <span class="{% if perf.completion_rate >= 50 %}completion-rate-good{% else %}completion-rate-poor{% endif %}">
+                            {{ perf.completion_rate }}%
+                        </span>
+                    </td>
+                    <td><span class="stat-value">{{ perf.activities_7days }}</span></td>
+                    <td>
+                        {% if perf.last_activity %}
+                            {{ perf.last_activity|date:"M d, H:i" }}
+                        {% else %}
+                            <span style="color: #ccc;">Never</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            No sales agents configured yet. Add agents to the 'sales_agent' group.
+        </div>
+    {% endif %}
+</div>
+
+<!-- ==================== GRID: Activity Feed + Alerts ==================== -->
+<div class="grid-2col">
+
+    <!-- ACTIVITY FEED -->
+    <div class="section">
+        <div class="section-title">🧾 Recent Activity Feed</div>
+
+        {% if activity_feed %}
+            <div>
+                {% for activity in activity_feed %}
+                <div class="activity-item">
+                    <div class="activity-time">{{ activity.time|date:"M d, H:i" }}</div>
+                    <div class="activity-content">
+                        <div>
+                            <span class="activity-user">{{ activity.user }}</span>
+                            <span class="activity-action">{{ activity.action }}</span>
+                            <span>on</span>
+                            <span class="activity-lead">{{ activity.lead }}</span>
+                        </div>
+                        {% if activity.message %}
+                        <div class="activity-message">💬 {{ activity.message }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="no-activities">
+                No activities recorded yet
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- ALERTS & BOTTLENECKS -->
+    <div class="section">
+        <div class="section-title">
+            🚨 Critical Alerts
+            {% if alert_count > 0 %}
+            <span class="badge badge-critical">{{ alert_count }}</span>
+            {% endif %}
+        </div>
+
+        {% if alerts %}
+            <div class="alerts-container">
+                {% for alert in alerts %}
+                <div class="alert-box {% if alert.type == 'bottleneck' %}bottleneck{% elif alert.type == 'inactive' %}inactive{% endif %}">
+                    <div>
+                        <span class="alert-icon">{{ alert.icon }}</span>
+                        <span class="alert-title">{{ alert.title }}</span>
+                    </div>
+                    <div class="alert-description">{{ alert.description }}</div>
+                    <div class="alert-user">👤 {{ alert.assigned_to }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="no-alerts">
+                ✅ All systems running smoothly! No critical alerts.
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- ==================== SUMMARY STATS ==================== -->
+<div class="section">
+    <div class="section-title">📋 Summary</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+        <div style="padding: 15px; background: #f9f9f9; border-radius: 4px;">
+            <div style="font-weight: 600; color: #333; margin-bottom: 8px;">Total Team Members</div>
+            <div style="font-size: 24px; font-weight: 700; color: #E53935;">{{ total_agents }}</div>
+        </div>
+
+        <div style="padding: 15px; background: #f9f9f9; border-radius: 4px;">
+            <div style="font-weight: 600; color: #333; margin-bottom: 8px;">Total Activities (7 days)</div>
+            <div style="font-size: 24px; font-weight: 700; color: #E53935;">{{ total_activities_7days }}</div>
+        </div>
+
+        {% if most_active_user %}
+        <div style="padding: 15px; background: #E8F5E9; border-radius: 4px; border-left: 4px solid #4CAF50;">
+            <div style="font-weight: 600; color: #333; margin-bottom: 8px;">👑 Most Active Today</div>
+            <div style="font-size: 16px; font-weight: 700; color: #2e7d32;">
+                {{ most_active_user.first_name }} {{ most_active_user.last_name }}
+                <span style="color: #666; font-size: 12px;">({{ most_active_count }} activities)</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
