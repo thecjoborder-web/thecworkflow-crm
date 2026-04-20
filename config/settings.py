@@ -22,9 +22,11 @@ SECRET_KEY = 'django-insecure-=klap(oqw72fp2yd!f9s&u$4p1$ixx^mbiyi=qboonoq12o-n-
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "thecworkflow.com",
-    "www.thecworkflow.com",
-    ".onrender.com",
+    '127.0.0.1',
+    'localhost',
+    'thecworkflow.com',
+    'www.thecworkflow.com',
+    '.onrender.com'
 ]
 
 
@@ -45,6 +47,7 @@ INSTALLED_APPS = [
     # original crm_leads app (contains Lead, LeadActivity, etc.)
     'crm_leads',
     'dashboards',
+    'projects',  # 👈 NEW: Project Management & Production Room
 ]
 
 
@@ -144,6 +147,14 @@ USE_TZ = True
 # --------------------------------------------------
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+
+
+# --------------------------------------------------
+# Media files (User uploads)
+# --------------------------------------------------
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 
 

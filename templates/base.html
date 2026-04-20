@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+{% load static %}
 <head>
     <meta charset="UTF-8">
     <title></title>
@@ -12,10 +13,27 @@
             color: #000000;
         }
 
-        header {
+        .site-header {
             background: #000000;
             color: #ffffff;
             padding: 15px 25px;
+        }
+
+        .site-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .site-logo {
+            max-height: 40px;
+            width: auto;
+            display: block;
+        }
+
+        .site-header h1 {
+            margin: 0;
+            font-size: 22px;
         }
 
         header h1 {
@@ -91,8 +109,11 @@
 
 <body>
 
-<header>
-    <h1>THEC CRM SYSTEM</h1>
+<header class="site-header">
+    <div class="site-brand">
+        <img src=\"{% static 'images/thec_logo.svg' %}\" alt=\"THEC Logo\" class=\"site-logo\" onerror=\"this.style.display='none'\">
+        <h1>THEC CRM SYSTEM</h1>
+    </div>
 </header>
 
 <main>

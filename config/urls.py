@@ -41,10 +41,12 @@ urlpatterns = [
     
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
-    path('dashboard/', include('dashboards.urls')),  # 👈 Includes ceo/, admin/, sales/ routes
+    path('dashboard/', include('dashboards.urls')),
+    path('projects/', include('projects.urls')),  # 👈 NEW: Project Management & Production
 ]
 
 
 # Serve static files during development
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.BASE_DIR / "static")
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  # 👈 Media files

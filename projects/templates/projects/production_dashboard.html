@@ -1,0 +1,581 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f5f7fa;
+        color: #333;
+    }
+
+    .dashboard-header {
+        background: linear-gradient(135deg, #B71C1C 0%, #D32F2F 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+    }
+
+    .dashboard-title {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .dashboard-subtitle {
+        font-size: 14px;
+        opacity: 0.9;
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .kpi-card {
+        background: white;
+        border-left: 4px solid #D32F2F;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        text-align: center;
+    }
+
+    .kpi-label {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #999;
+        margin-bottom: 10px;
+        letter-spacing: 0.5px;
+    }
+
+    .kpi-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: #D32F2F;
+    }
+
+    /* Section */
+    .section {
+        background: white;
+        border-radius: 8px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1a1a1a;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #D32F2F;
+        margin-bottom: 20px;
+    }
+
+    /* Filters */
+    .filter-bar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        align-items: flex-end;
+    }
+
+    .filter-bar input,
+    .filter-bar select {
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 13px;
+    }
+
+    .filter-bar input {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    /* Buttons */
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 13px;
+        text-transform: uppercase;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: #D32F2F;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #B71C1C;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
+    }
+
+    .btn-success {
+        background: #4CAF50;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #388E3C;
+    }
+
+    .btn-secondary {
+        background: #757575;
+        color: white;
+    }
+
+    .btn-action {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    /* Project Cards */
+    .project-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 15px;
+        transition: all 0.2s;
+        background: white;
+    }
+
+    .project-card:hover {
+        border-color: #D32F2F;
+        box-shadow: 0 4px 12px rgba(211, 47, 47, 0.15);
+    }
+
+    .project-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .project-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #333;
+        flex: 1;
+    }
+
+    .project-client {
+        color: #666;
+        font-size: 13px;
+        margin: 4px 0;
+    }
+
+    .project-deadline {
+        color: #999;
+        font-size: 12px;
+    }
+
+    .project-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+        padding-top: 15px;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .project-specs {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .spec {
+        font-size: 12px;
+        color: #666;
+    }
+
+    .spec-label {
+        font-weight: 600;
+        color: #333;
+    }
+
+    /* Status Badge */
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-submitted {
+        background: #E3F2FD;
+        color: #1565C0;
+    }
+
+    .badge-in_production {
+        background: #FFF3E0;
+        color: #E65100;
+    }
+
+    .badge-quality_check {
+        background: #F3E5F5;
+        color: #6A1B9A;
+    }
+
+    .badge-completed {
+        background: #E8F5E9;
+        color: #1B5E20;
+    }
+
+    .badge-ready_for_pickup {
+        background: #FCE4EC;
+        color: #880E4F;
+    }
+
+    /* Modal */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+    }
+
+    .modal {
+        background: white;
+        border-radius: 8px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-header {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #FF9800;
+        padding-bottom: 15px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #333;
+        font-size: 13px;
+    }
+
+    select,
+    textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 13px;
+        font-family: inherit;
+    }
+
+    select:focus,
+    textarea:focus {
+        outline: none;
+        border-color: #FF9800;
+        box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.1);
+    }
+
+    textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+
+    .modal-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+        justify-content: flex-end;
+    }
+
+    .empty-state {
+        padding: 40px;
+        text-align: center;
+        color: #999;
+        background: #f9f9f9;
+        border-radius: 8px;
+        border: 2px dashed #ddd;
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-title {
+            font-size: 24px;
+        }
+
+        .kpi-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .project-header {
+            flex-direction: column;
+        }
+
+        .project-actions {
+            flex-direction: column;
+        }
+
+        .project-actions .btn {
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+
+<!-- CSRF Token -->
+<form style="display: none;">
+    {% csrf_token %}
+</form>
+
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <div class="dashboard-title">🏭 Production Room Dashboard</div>
+    <div class="dashboard-subtitle">Download and manage production projects</div>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-label">Available Projects</div>
+        <div class="kpi-value">{{ total_projects }}</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">In Production</div>
+        <div class="kpi-value">{{ in_production }}</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">Completed</div>
+        <div class="kpi-value">{{ completed }}</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-label">Ready for Pickup</div>
+        <div class="kpi-value">{{ ready_for_pickup }}</div>
+    </div>
+</div>
+
+<!-- Projects Section -->
+<div class="section">
+    <div class="section-title">📦 Production Projects</div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+        <input type="text" id="client-search" placeholder="Search by client..." value="{{ client_search }}">
+        <select id="status-filter">
+            <option value="">All Status</option>
+            {% for status_val, status_label in project_statuses %}
+            <option value="{{ status_val }}" {% if status_filter == status_val %}selected{% endif %}>
+                {{ status_label }}
+            </option>
+            {% endfor %}
+        </select>
+        <button class="btn btn-primary btn-action" onclick="applyFilters()">🔍 Filter</button>
+    </div>
+
+    <!-- Projects List -->
+    {% if projects %}
+        {% for project in projects %}
+        <div class="project-card">
+            <div class="project-header">
+                <div>
+                    <div class="project-title">{{ project.project_title }}</div>
+                    <div class="project-client">👤 {{ project.client_name }}</div>
+                    <div class="project-deadline">📅 Due: {{ project.deadline }}</div>
+                </div>
+                <span class="badge badge-{{ project.status }}">
+                    {{ project.get_status_display }}
+                </span>
+            </div>
+
+            <div class="project-specs">
+                <div class="spec">
+                    <span class="spec-label">Copies:</span> {{ project.number_of_copies }}
+                </div>
+                <div class="spec">
+                    <span class="spec-label">Font:</span> {{ project.font_type }}
+                </div>
+                <div class="spec">
+                    <span class="spec-label">Color:</span> {{ project.get_color_requirement_display }}
+                </div>
+                <div class="spec">
+                    <span class="spec-label">Paper:</span> {{ project.paper_type }}
+                </div>
+                <div class="spec">
+                    <span class="spec-label">Binding:</span> {{ project.get_binding_type_display }}
+                </div>
+            </div>
+
+            {% if project.special_instructions %}
+            <div style="padding: 10px; background: #FFF9C4; border-left: 3px solid #FBC02D; margin-bottom: 15px; border-radius: 2px; font-size: 12px;">
+                <strong>📝 Special Instructions:</strong><br>
+                {{ project.special_instructions }}
+            </div>
+            {% endif %}
+
+            <div class="project-actions">
+                <a href="{% url 'projects:download_project' project.id %}" class="btn btn-primary btn-action">⬇️ Download</a>
+                <button onclick="openStatusModal({{ project.id }}, '{{ project.status }}')" class="btn btn-success btn-action">✅ Update Status</button>
+                <a href="{% url 'projects:project_detail' project.id %}" class="btn btn-secondary btn-action">👁️ View Details</a>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            📭 No projects available. Come back when Project Supervisors send projects!
+        </div>
+    {% endif %}
+</div>
+
+<!-- Status Update Modal -->
+<div class="modal-overlay" id="status-modal">
+    <div class="modal">
+        <div class="modal-header">📊 Update Project Status</div>
+
+        <form id="status-form">
+            <div class="form-group">
+                <label for="new_status">New Status *</label>
+                <select name="status" id="new_status" required>
+                    <option value="">Select Status</option>
+                    {% for status_val, status_label in project_statuses %}
+                    <option value="{{ status_val }}">{{ status_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="notes">Notes (Optional)</label>
+                <textarea name="notes" placeholder="Add notes about this status change..."></textarea>
+            </div>
+
+            <div class="modal-buttons">
+                <button type="button" class="btn btn-secondary" onclick="closeStatusModal()">Cancel</button>
+                <button type="submit" class="btn btn-success">Save Status</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Get CSRF token from hidden form field
+const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+let currentProjectId = null;
+
+// Open Status Modal
+function openStatusModal(projectId, currentStatus) {
+    currentProjectId = projectId;
+    document.getElementById('new_status').value = currentStatus;
+    document.getElementById('status-modal').classList.add('active');
+}
+
+// Close Status Modal
+function closeStatusModal() {
+    document.getElementById('status-modal').classList.remove('active');
+    currentProjectId = null;
+}
+
+// Update Status
+document.getElementById('status-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const newStatus = document.getElementById('new_status').value;
+    const notes = document.querySelector('textarea[name="notes"]').value;
+
+    try {
+        const response = await fetch(`/projects/${currentProjectId}/update-status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({
+                status: newStatus,
+                notes: notes
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert('✅ ' + data.message);
+            closeStatusModal();
+            location.reload();
+        } else {
+            alert('❌ Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error: ' + error.message);
+    }
+});
+
+// Apply Filters
+function applyFilters() {
+    const clientSearch = document.getElementById('client-search').value;
+    const statusFilter = document.getElementById('status-filter').value;
+    
+    let url = '?';
+    if (clientSearch) url += `client=${encodeURIComponent(clientSearch)}&`;
+    if (statusFilter) url += `status=${encodeURIComponent(statusFilter)}`;
+    
+    window.location.href = url;
+}
+
+// Allow Enter in search
+document.getElementById('client-search').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') applyFilters();
+});
+
+// Close modal on escape
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeStatusModal();
+});
+
+// Close modal on overlay click
+document.getElementById('status-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'status-modal') closeStatusModal();
+});
+</script>
+{% endblock %}

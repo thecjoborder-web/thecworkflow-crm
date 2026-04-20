@@ -1,0 +1,8 @@
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Red background -->
+  <rect width="200" height="200" fill="#D32F2F"/>
+  <!-- White "THEC" text -->
+  <text x="100" y="120" font-family="Arial, sans-serif" font-size="48" font-weight="bold" text-anchor="middle" fill="white">THEC</text>
+  <!-- Small subtitle -->
+  <text x="100" y="155" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="white">Writers & Publishers</text>
+</svg>

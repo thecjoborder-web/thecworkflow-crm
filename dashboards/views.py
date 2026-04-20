@@ -12,6 +12,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
 from crm_leads.models import Lead, LeadActivity, Note
+from projects.models import Project, ProjectStatusLog, ProjectDownloadLog
 
 User = get_user_model()
 
@@ -367,6 +368,39 @@ def ceo_dashboard(request):
         status='awaiting',
         awaiting_at__lt=seven_days_ago
     ).count()
+
+    # ===== 📂 PROJECT METRICS =====
+    total_projects = Project.objects.count()
+    sent_to_production_projects = Project.objects.filter(sent_to_production=True).count()
+    in_production_projects = Project.objects.filter(status='in_production').count()
+    completed_projects = Project.objects.filter(status='completed').count()
+    ready_for_pickup_projects = Project.objects.filter(status='ready_for_pickup').count()
+    latest_projects = Project.objects.order_by('-created_at')[:6]
+
+    project_status_logs = ProjectStatusLog.objects.select_related('project', 'changed_by').order_by('-created_at')[:5]
+    project_downloads = ProjectDownloadLog.objects.select_related('project', 'downloaded_by').order_by('-downloaded_at')[:5]
+    project_activity_feed = []
+
+    for log in project_status_logs:
+        notes_text = log.notes or ''
+        project_activity_feed.append({
+            'user': log.changed_by.username if log.changed_by else 'Unknown',
+            'action': '🔄 Status Change',
+            'project': log.project.project_title,
+            'message': notes_text[:80] + ('...' if len(notes_text) > 80 else ''),
+            'time': log.created_at,
+        })
+
+    for download in project_downloads:
+        project_activity_feed.append({
+            'user': download.downloaded_by.username if download.downloaded_by else 'Unknown',
+            'action': '📥 Download',
+            'project': download.project.project_title,
+            'message': f'Downloaded by {download.downloaded_by.username if download.downloaded_by else "Unknown"}',
+            'time': download.downloaded_at,
+        })
+
+    project_activity_feed.sort(key=lambda item: item['time'], reverse=True)
     
     # ===== 👥 STAFF PERFORMANCE =====
     
@@ -511,6 +545,13 @@ def ceo_dashboard(request):
         'activities_today': activities_today,
         'most_active_user': most_active_user,
         'most_active_count': most_active_count,
+        'total_projects': total_projects,
+        'sent_to_production_projects': sent_to_production_projects,
+        'in_production_projects': in_production_projects,
+        'completed_projects': completed_projects,
+        'ready_for_pickup_projects': ready_for_pickup_projects,
+        'latest_projects': latest_projects,
+        'project_activity_feed': project_activity_feed,
     }
     
     return render(request, 'dashboards/ceo_dashboard.html', context)

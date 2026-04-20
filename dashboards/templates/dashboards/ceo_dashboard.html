@@ -412,6 +412,73 @@
     </div>
 </div>
 
+<div class="section">
+    <div class="section-title">📂 Project Operations</div>
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-label">📌 Total Projects</div>
+            <div class="kpi-value">{{ total_projects }}</div>
+            <div class="kpi-detail">All uploaded projects</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">✈️ Sent to Production</div>
+            <div class="kpi-value">{{ sent_to_production_projects }}</div>
+            <div class="kpi-detail">Ready for production</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">🔄 In Production</div>
+            <div class="kpi-value">{{ in_production_projects }}</div>
+            <div class="kpi-detail">Currently processing</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">✅ Completed</div>
+            <div class="kpi-value">{{ completed_projects }}</div>
+            <div class="kpi-detail">Finished projects</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">🚚 Ready for Pickup</div>
+            <div class="kpi-value">{{ ready_for_pickup_projects }}</div>
+            <div class="kpi-detail">Awaiting collection</div>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">📘 Latest Projects</div>
+    {% if latest_projects %}
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Client</th>
+                <th>Status</th>
+                <th>Supervisor</th>
+                <th>Deadline</th>
+                <th>Sent</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for project in latest_projects %}
+            <tr>
+                <td>{{ project.project_title }}</td>
+                <td>{{ project.client_name }}</td>
+                <td><span class="badge badge-{{ project.status }}">{{ project.get_status_display }}</span></td>
+                <td>{{ project.created_by.first_name|default:project.created_by.username }}</td>
+                <td>{{ project.deadline }}</td>
+                <td>{% if project.sent_to_production %}Yes{% else %}No{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">No projects have been created yet.</div>
+    {% endif %}
+</div>
+
 <!-- ==================== STAFF PERFORMANCE ==================== -->
 <div class="section">
     <div class="section-title">👥 Staff Performance & Productivity</div>
@@ -484,6 +551,28 @@
                 </div>
                 {% endfor %}
             </div>
+
+            {% if project_activity_feed %}
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #333;">📌 Project Activity</h3>
+                {% for activity in project_activity_feed %}
+                <div class="activity-item">
+                    <div class="activity-time">{{ activity.time|date:"M d, H:i" }}</div>
+                    <div class="activity-content">
+                        <div>
+                            <span class="activity-user">{{ activity.user }}</span>
+                            <span class="activity-action">{{ activity.action }}</span>
+                            <span>for</span>
+                            <span class="activity-lead">{{ activity.project }}</span>
+                        </div>
+                        {% if activity.message %}
+                        <div class="activity-message">💬 {{ activity.message }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
         {% else %}
             <div class="no-activities">
                 No activities recorded yet
