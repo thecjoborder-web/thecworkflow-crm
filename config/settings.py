@@ -17,16 +17,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # --------------------------------------------------
 # Security
 # --------------------------------------------------
-SECRET_KEY = 'django-insecure-=klap(oqw72fp2yd!f9s&u$4p1$ixx^mbiyi=qboonoq12o-n-'
+# Use DJANGO_SECRET_KEY from Render, fallback to insecure key for local dev
+SECRET_KEY = os.getenv(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-=klap(oqw72fp2yd!f9s&u$4p1$ixx^mbiyi=qboonoq12o-n-'
+)
 
-DEBUG = os.getenv("DEBUG", "True") == "True"  # Default to True locally; set DEBUG=False in production
+# Check DJANGO_DEBUG first (Render), then DEBUG (local)
+DEBUG = os.getenv('DJANGO_DEBUG', os.getenv('DEBUG', 'True')).lower() == 'true'
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
     'localhost',
     'thecworkflow.com',
     'www.thecworkflow.com',
-    '.onrender.com'
+    '.onrender.com',
+    'thecworkflow-crm.onrender.com'
 ]
 
 
