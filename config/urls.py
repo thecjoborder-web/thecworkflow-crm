@@ -13,20 +13,34 @@ def dashboard_router(request):
     Route users to their appropriate dashboard based on role:
     - CEO/Superuser -> CEO Dashboard
     - Admin/Staff -> Admin Dashboard
+    - Project Supervisor -> Project Supervisor Dashboard
+    - Production Staff -> Production Dashboard
     - Sales Agent -> Sales Dashboard
     """
     user = request.user
-    
+
     # CEO Dashboard
     if user.groups.filter(name='ceo').exists() or user.is_superuser:
         return redirect('/dashboard/ceo/')
-    
+
     # Admin Dashboard
-    if user.is_staff or user.is_superuser:
+    if user.is_staff:
         return redirect('/dashboard/admin/')
-    
-    # Sales Dashboard (default for anyone else)
-    return redirect('/dashboard/sales/')
+
+    # Project Supervisor Dashboard
+    if user.groups.filter(name='project_supervisor').exists():
+        return redirect('/projects/supervisor/')
+
+    # Production Staff Dashboard
+    if user.groups.filter(name='production_staff').exists():
+        return redirect('/projects/production/')
+
+    # Sales Dashboard
+    if user.groups.filter(name='sales_agent').exists():
+        return redirect('/dashboard/sales/')
+
+    # Default fallback: if authenticated but no known role, send to login
+    return redirect('/accounts/login/')
 
 
 # 🔁 Redirect root domain to login page or dashboard

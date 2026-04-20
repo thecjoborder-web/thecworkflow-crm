@@ -19,7 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # --------------------------------------------------
 SECRET_KEY = 'django-insecure-=klap(oqw72fp2yd!f9s&u$4p1$ixx^mbiyi=qboonoq12o-n-'
 
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "True") == "True"  # Default to True locally; set DEBUG=False in production
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
@@ -170,6 +170,34 @@ LOGIN_REDIRECT_URL = '/'
 
 # After logout, go back to login page
 LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+
+# --------------------------------------------------
+# SESSION & CSRF SECURITY (PRODUCTION FIX)
+# --------------------------------------------------
+
+# Store sessions in database (persistent across server restarts)
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+
+# Session timeout (in seconds) - 2 weeks
+SESSION_COOKIE_AGE = 1209600
+
+# Ensure session cookies are secure in production
+SESSION_COOKIE_SECURE = not DEBUG  # Only HTTPS in production
+SESSION_COOKIE_HTTPONLY = True      # Prevent JavaScript access
+SESSION_COOKIE_SAMESITE = 'Lax'     # CSRF protection
+
+# CSRF token protection
+CSRF_COOKIE_SECURE = not DEBUG      # Only HTTPS in production
+CSRF_COOKIE_HTTPONLY = False        # JavaScript needs to read CSRF token
+CSRF_COOKIE_SAMESITE = 'Lax'        # CSRF protection
+
+# Trusted origins for CSRF (add your production domain)
+CSRF_TRUSTED_ORIGINS = [
+    'https://thecworkflow.com',
+    'https://www.thecworkflow.com',
+    'https://*.onrender.com',
+]
 
 
 # --------------------------------------------------
