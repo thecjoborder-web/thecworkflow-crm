@@ -4,14 +4,15 @@ import io
 from datetime import date, timedelta
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.db.models import Prefetch, Count, Q
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
-from crm_leads.models import Lead, LeadActivity, Note
+from crm_leads.models import Lead, LeadActivity, Note, JobOrder
+from crm_leads.forms import JobOrderForm
 from projects.models import Project, ProjectStatusLog, ProjectDownloadLog
 
 User = get_user_model()
@@ -568,7 +569,7 @@ def is_sales_agent(user):
 @user_passes_test(is_sales_agent)
 def sales_dashboard(request):
     """
-    Sales dashboard with pipeline stages, KPI metrics, and activity tracking.
+    Sales dashboard with pipeline stages, KPI metrics, activity tracking, and job orders.
     """
     user = request.user
     
@@ -582,11 +583,23 @@ def sales_dashboard(request):
     closed_leads = leads.filter(status="closed")
     lost_leads = leads.filter(status="lost")
     
+    # Get job orders created by this user
+    job_orders = JobOrder.objects.filter(created_by=user)
+    draft_orders = job_orders.filter(status="draft")
+    sent_orders = job_orders.filter(status="sent_to_project")
+    closed_orders = job_orders.filter(status="closed")
+    
     # KPI Metrics
     total_leads = leads.count()
     active_leads = leads.exclude(status__in=["closed", "lost"]).count()
     awaiting_count = awaiting_leads.count()
     closed_count = closed_leads.count()
+    
+    # Job Order Metrics
+    total_job_orders = job_orders.count()
+    active_job_orders = job_orders.exclude(status="closed").count()
+    sent_job_orders = sent_orders.count()
+    closed_job_orders = closed_orders.count()
     
     # Conversion rate calculation
     conversion_rate = (
@@ -606,6 +619,19 @@ def sales_dashboard(request):
     if filter_type:
         all_activities = all_activities.filter(activity_type=filter_type)
     
+    # Date filtering for job orders (daily/weekly/monthly)
+    date_filter = request.GET.get("date_filter", "all")
+    if date_filter == "today":
+        job_orders = job_orders.filter(created_at__date=date.today())
+    elif date_filter == "week":
+        week_start = date.today() - timedelta(days=date.today().weekday())
+        job_orders = job_orders.filter(created_at__date__gte=week_start)
+    elif date_filter == "month":
+        month_start = date.today().replace(day=1)
+        job_orders = job_orders.filter(created_at__date__gte=month_start)
+
+    job_orders = job_orders.order_by('-created_at')
+    
     context = {
         # Pipeline stages
         "assigned_leads": assigned_leads,
@@ -613,6 +639,12 @@ def sales_dashboard(request):
         "awaiting_leads": awaiting_leads,
         "closed_leads": closed_leads,
         "lost_leads": lost_leads,
+        
+        # Job Orders
+        "job_orders": job_orders,
+        "draft_orders": draft_orders,
+        "sent_orders": sent_orders,
+        "closed_orders": closed_orders,
         
         # KPI metrics
         "total_leads": total_leads,
@@ -622,12 +654,178 @@ def sales_dashboard(request):
         "conversion_rate": round(conversion_rate, 2),
         "activities_today": activities_today,
         
+        # Job Order metrics
+        "total_job_orders": total_job_orders,
+        "active_job_orders": active_job_orders,
+        "sent_job_orders": sent_job_orders,
+        "closed_job_orders": closed_job_orders,
+        
         # All activities for filtering
         "activities": all_activities,
         "selected_filter": filter_type or "",
+        "date_filter": date_filter,
     }
     
     return render(request, "dashboards/sales_dashboard.html", context)
+
+
+# --------------------------
+# Job Order Creation
+# --------------------------
+@login_required
+@user_passes_test(is_sales_agent)
+def create_job_order(request):
+    if request.method == 'POST':
+        form = JobOrderForm(request.POST, request.FILES)
+        if form.is_valid():
+            job_order = form.save(commit=False)
+            job_order.created_by = request.user
+            job_order.save()
+            return redirect('dashboards:job_order_detail', order_id=job_order.id)
+    else:
+        form = JobOrderForm()
+
+    return render(request, 'dashboards/job_order_form.html', {
+        'form': form,
+    })
+
+
+# --------------------------
+# Job Order Detail
+# --------------------------
+@login_required
+@user_passes_test(is_sales_agent)
+def job_order_detail(request, order_id):
+    job_order = get_object_or_404(JobOrder, id=order_id, created_by=request.user)
+    return render(request, 'dashboards/job_order_detail.html', {
+        'job_order': job_order,
+    })
+
+
+# --------------------------
+# Print Job Order
+# --------------------------
+@login_required
+@user_passes_test(is_sales_agent)
+def print_job_order(request, order_id):
+    job_order = get_object_or_404(JobOrder, id=order_id, created_by=request.user)
+    return render(request, 'dashboards/job_order_print.html', {
+        'job_order': job_order,
+    })
+
+
+# --------------------------
+# Send Job Order to Project
+# --------------------------
+@login_required
+@user_passes_test(is_sales_agent)
+@require_POST
+def send_job_order_to_project(request, order_id):
+    job_order = get_object_or_404(JobOrder, id=order_id, created_by=request.user)
+
+    if job_order.status == 'closed':
+        return JsonResponse({'error': 'Cannot send a closed order.'}, status=400)
+    if job_order.status == 'sent_to_project':
+        return JsonResponse({'error': 'This order has already been sent to project.'}, status=400)
+
+    project = Project.objects.create(
+        project_title=job_order.title_description or job_order.get_product_service_display(),
+        project_description=job_order.special_instructions or job_order.title_description or job_order.get_product_service_display(),
+        client_name=job_order.customer_name,
+        client_contact=job_order.phone or job_order.email or '',
+        project_date=job_order.date or timezone.now().date(),
+        deadline=job_order.expected_delivery_date or job_order.date or timezone.now().date(),
+        number_of_copies=job_order.quantity,
+        font_type=job_order.font_type or 'Times New Roman',
+        color_requirement=job_order.color_mode or 'b&w',
+        paper_type=job_order.paper_type or 'A4',
+        binding_type=job_order.binding or 'perfect',
+        special_instructions=job_order.special_instructions or '',
+        budget=job_order.agreed_amount or 0.00,
+        project_amount=job_order.agreed_amount or 0.00,
+        amount_paid=job_order.part_payment or 0.00,
+        balance_remaining=job_order.balance_due or 0.00,
+        manuscript_file=job_order.manuscript_file if job_order.manuscript_file else None,
+        created_by=request.user,
+        source_job_order=job_order,
+        status='submitted',
+    )
+
+    ProjectStatusLog.objects.create(
+        project=project,
+        old_status='submitted',
+        new_status='submitted',
+        changed_by=request.user,
+        notes='Created from sales job order'
+    )
+
+    job_order.status = 'sent_to_project'
+    job_order.sent_at = timezone.now()
+    job_order.save()
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'message': 'Job order successfully sent to project management.',
+            'project_id': project.id,
+        })
+
+    return redirect('dashboards:job_order_detail', order_id=job_order.id)
+
+
+# --------------------------
+# Export Job Orders
+# --------------------------
+@login_required
+@user_passes_test(is_sales_agent)
+def export_job_orders_csv(request):
+    job_orders = JobOrder.objects.filter(created_by=request.user)
+    date_filter = request.GET.get('date_filter', 'all')
+    if date_filter == 'today':
+        job_orders = job_orders.filter(created_at__date=date.today())
+    elif date_filter == 'week':
+        week_start = date.today() - timedelta(days=date.today().weekday())
+        job_orders = job_orders.filter(created_at__date__gte=week_start)
+    elif date_filter == 'month':
+        month_start = date.today().replace(day=1)
+        job_orders = job_orders.filter(created_at__date__gte=month_start)
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="job_orders.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        'Order No',
+        'Date',
+        'Customer Name',
+        'Phone',
+        'Email',
+        'Product/Service',
+        'Quantity',
+        'Status',
+        'Agreed Amount',
+        'Part Payment',
+        'Balance Due',
+        'Created At',
+    ])
+
+    for job in job_orders.order_by('-created_at'):
+        writer.writerow([
+            job.order_no,
+            job.date,
+            job.customer_name,
+            job.phone,
+            job.email,
+            job.get_product_service_display(),
+            job.quantity,
+            job.get_status_display(),
+            job.agreed_amount,
+            job.part_payment,
+            job.balance_due,
+            job.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+        ])
+
+    return response
 
 
 # --------------------------

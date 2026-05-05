@@ -431,6 +431,9 @@
                     <span class="spec-label">Copies:</span> {{ project.number_of_copies }}
                 </div>
                 <div class="spec">
+                    <span class="spec-label">Source Order:</span> {% if project.source_job_order %}{{ project.source_job_order.order_no }}{% else %}—{% endif %}
+                </div>
+                <div class="spec">
                     <span class="spec-label">Font:</span> {{ project.font_type }}
                 </div>
                 <div class="spec">
@@ -453,6 +456,9 @@
 
             <div class="project-actions">
                 <a href="{% url 'projects:download_project' project.id %}" class="btn btn-primary btn-action">⬇️ Download</a>
+                {% if project.source_job_order %}
+                <a href="{% url 'projects:print_project_order' project.id %}" class="btn btn-secondary btn-action" target="_blank">🖨️ Print Order</a>
+                {% endif %}
                 <button onclick="openStatusModal({{ project.id }}, '{{ project.status }}')" class="btn btn-success btn-action">✅ Update Status</button>
                 <a href="{% url 'projects:project_detail' project.id %}" class="btn btn-secondary btn-action">👁️ View Details</a>
             </div>

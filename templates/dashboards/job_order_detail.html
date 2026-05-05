@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-panel">
+    <div class="details-header">
+        <div>
+            <h1>Job Order {{ job_order.order_no }}</h1>
+            <p>{{ job_order.customer_name }} · {{ job_order.phone }} · {{ job_order.email }}</p>
+        </div>
+        <div class="details-actions">
+            <a href="{% url 'dashboards:print_job_order' order_id=job_order.id %}" target="_blank" class="btn btn-note">Print Order</a>
+            {% if job_order.status == 'draft' %}
+                <form action="{% url 'dashboards:send_job_order_to_project' order_id=job_order.id %}" method="post" class="inline-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-call">Send to Project</button>
+                </form>
+            {% endif %}
+            <a href="{% url 'dashboards:sales_dashboard' %}" class="btn btn-call">Back to Dashboard</a>
+        </div>
+    </div>
+
+    <div class="order-summary">
+        <div class="summary-card">
+            <strong>Status</strong>
+            <span>{{ job_order.get_status_display }}</span>
+        </div>
+        <div class="summary-card">
+            <strong>Created</strong>
+            <span>{{ job_order.created_at|date:'M d, Y' }}</span>
+        </div>
+        <div class="summary-card">
+            <strong>Amount</strong>
+            <span>₦{{ job_order.agreed_amount|floatformat:2 }}</span>
+        </div>
+        <div class="summary-card">
+            <strong>Balance</strong>
+            <span>₦{{ job_order.balance_due|floatformat:2 }}</span>
+        </div>
+    </div>
+
+    <div class="order-grid">
+        <div>
+            <h2>Customer Information</h2>
+            <p><strong>Name:</strong> {{ job_order.customer_name }}</p>
+            <p><strong>Phone:</strong> {{ job_order.phone }}</p>
+            <p><strong>Email:</strong> {{ job_order.email }}</p>
+            <p><strong>Company:</strong> {{ job_order.company }}</p>
+            <p><strong>Delivery Address:</strong> {{ job_order.delivery_address }}</p>
+        </div>
+        <div>
+            <h2>Product / Service</h2>
+            <p><strong>Service:</strong> {{ job_order.get_product_service_display }}</p>
+            <p><strong>Title / Description:</strong> {{ job_order.title_description }}</p>
+            <p><strong>Quantity:</strong> {{ job_order.quantity }}</p>
+            <p><strong>Size:</strong> {{ job_order.get_size_dimension_display }}</p>
+            <p><strong>Color Mode:</strong> {{ job_order.get_color_mode_display }}</p>
+            <p><strong>Paper Type:</strong> {{ job_order.get_paper_type_display }}</p>
+            <p><strong>Binding:</strong> {{ job_order.get_binding_display }}</p>
+            <p><strong>Lamination:</strong> {{ job_order.get_lamination_display }}</p>
+            <p><strong>Total Pages:</strong> {{ job_order.total_pages }}</p>
+        </div>
+    </div>
+
+    <div class="order-grid">
+        <div>
+            <h2>Design Requirements</h2>
+            <p><strong>Design Needed:</strong> {{ job_order.get_design_needed_display }}</p>
+            <p><strong>Design Concepts:</strong> {{ job_order.get_design_concepts_display }}</p>
+            <p><strong>Design Style:</strong> {{ job_order.get_design_style_display }}</p>
+            <p><strong>Font Type:</strong> {{ job_order.font_type }}</p>
+            <p><strong>Font Size:</strong> {{ job_order.font_size }}</p>
+            <p><strong>Line Spacing:</strong> {{ job_order.get_line_spacing_display }}</p>
+            <p><strong>ISBN Required:</strong> {{ job_order.isbn_required|yesno:'Yes,No' }}</p>
+        </div>
+        <div>
+            <h2>Delivery & Pricing</h2>
+            <p><strong>Delivery Mode:</strong> {{ job_order.get_delivery_mode_display }}</p>
+            <p><strong>Expected Delivery:</strong> {{ job_order.expected_delivery_date|date:'M d, Y' }}</p>
+            <p><strong>Urgency Level:</strong> {{ job_order.get_urgency_level_display }}</p>
+            <p><strong>Source of Deal:</strong> {{ job_order.get_source_of_deal_display }}</p>
+            <p><strong>Estimated Budget:</strong> ₦{{ job_order.estimated_budget|floatformat:2 }}</p>
+            <p><strong>Part Payment:</strong> ₦{{ job_order.part_payment|floatformat:2 }}</p>
+            <p><strong>Balance Due:</strong> ₦{{ job_order.balance_due|floatformat:2 }}</p>
+        </div>
+    </div>
+
+    <div class="order-full">
+        <h2>Special Instructions</h2>
+        <p>{{ job_order.special_instructions|linebreaksbr }}</p>
+    </div>
+
+    <div class="file-links">
+        {% if job_order.invoice_file %}
+            <p><strong>Invoice File:</strong> <a href="{{ job_order.invoice_file.url }}" target="_blank">Download Invoice</a></p>
+        {% endif %}
+        {% if job_order.manuscript_file %}
+            <p><strong>Manuscript File:</strong> <a href="{{ job_order.manuscript_file.url }}" target="_blank">Download Manuscript</a></p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+.page-panel {
+    max-width: 1100px;
+    margin: 40px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.06);
+}
+.details-header {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+.details-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.inline-form {
+    margin: 0;
+}
+.order-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 30px;
+}
+.summary-card {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    padding: 18px;
+    border-radius: 12px;
+}
+.order-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+    margin-bottom: 24px;
+}
+.order-grid h2,
+.order-full h2 {
+    margin-bottom: 12px;
+}
+.order-grid p,
+.order-full p,
+.file-links p {
+    margin-bottom: 10px;
+    color: #374151;
+}
+.file-links {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+.btn {
+    padding: 12px 20px;
+    border-radius: 8px;
+}
+</style>
+{% endblock %}

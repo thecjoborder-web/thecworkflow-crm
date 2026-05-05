@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="print-page">
+    <header class="print-header">
+        <div>
+            <h1>THEC WRITERS & PUBLISHERS</h1>
+            <p>📍 Keffi, Nassarawa, Nigeria</p>
+            <p>📞 0816 734 1862 | ✉️ talk2thecservices@gmail.com</p>
+            <p>🌐 www.thecpublishers.com</p>
+        </div>
+        <div class="order-meta">
+            <p><strong>PROJECT TITLE:</strong> {{ project.project_title }}</p>
+            <p><strong>PROJECT ID:</strong> {{ project.id }}</p>
+            <p><strong>Date:</strong> {{ project.created_at|date:'m/d/Y' }}</p>
+            {% if source_job_order %}
+            <p><strong>SOURCE ORDER:</strong> {{ source_job_order.order_no }}</p>
+            {% endif %}
+        </div>
+    </header>
+
+    <section class="form-section">
+        <h2>PROJECT DETAILS</h2>
+        <div class="grid-two">
+            <div><strong>Client Name:</strong> {{ project.client_name }}</div>
+            <div><strong>Contact Email:</strong> {{ project.contact_email }}</div>
+            <div><strong>Phone:</strong> {{ project.client_contact }}</div>
+            <div><strong>Status:</strong> {{ project.get_status_display }}</div>
+            <div><strong>Deadline:</strong> {{ project.deadline|date:'m/d/Y' }}</div>
+            <div><strong>Budget:</strong> ₦{{ project.project_amount|floatformat:2 }}</div>
+            <div><strong>Amount Paid:</strong> ₦{{ project.amount_paid|floatformat:2 }}</div>
+            <div><strong>Balance Remaining:</strong> ₦{{ project.balance_remaining|floatformat:2 }}</div>
+        </div>
+    </section>
+
+    <section class="form-section">
+        <h2>SPECIFICATIONS</h2>
+        <div class="grid-two">
+            <div><strong>Copies:</strong> {{ project.number_of_copies }}</div>
+            <div><strong>Font:</strong> {{ project.font_type }}</div>
+            <div><strong>Color:</strong> {{ project.get_color_requirement_display }}</div>
+            <div><strong>Paper:</strong> {{ project.paper_type }}</div>
+            <div><strong>Binding:</strong> {{ project.get_binding_type_display }}</div>
+        </div>
+    </section>
+
+    {% if project.special_instructions %}
+    <section class="form-section">
+        <h2>SPECIAL INSTRUCTIONS</h2>
+        <p>{{ project.special_instructions|linebreaksbr }}</p>
+    </section>
+    {% endif %}
+
+    {% if source_job_order %}
+    <section class="form-section">
+        <h2>SOURCE JOB ORDER SUMMARY</h2>
+        <div class="grid-two">
+            <div><strong>Order No:</strong> {{ source_job_order.order_no }}</div>
+            <div><strong>Customer:</strong> {{ source_job_order.customer_name }}</div>
+            <div><strong>Service:</strong> {{ source_job_order.get_product_service_display }}</div>
+            <div><strong>Agreed Amount:</strong> ₦{{ source_job_order.agreed_amount|floatformat:2 }}</div>
+            <div><strong>Delivery Mode:</strong> {{ source_job_order.get_delivery_mode_display }}</div>
+            <div><strong>Expected Delivery:</strong> {{ source_job_order.expected_delivery_date|date:'m/d/Y' }}</div>
+        </div>
+    </section>
+    {% endif %}
+
+    <footer class="print-footer">
+        <p>Printing this document provides an order summary of the project and its linked sales job order. Use this as the reference sheet for production and quality checks.</p>
+    </footer>
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+.print-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 28px;
+    background: white;
+    font-family: Arial, sans-serif;
+    color: #111;
+}
+.print-header {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    border-bottom: 3px solid #111;
+    padding-bottom: 18px;
+    margin-bottom: 24px;
+}
+.print-header h1 {
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+.order-meta p {
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+.form-section {
+    margin-bottom: 22px;
+}
+.form-section h2 {
+    font-size: 18px;
+    margin-bottom: 14px;
+    letter-spacing: 0.7px;
+}
+.grid-two {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+}
+.grid-two div {
+    background: #f7f7f7;
+    padding: 12px 14px;
+    border-radius: 8px;
+}
+.print-footer {
+    border-top: 1px solid #ddd;
+    padding-top: 16px;
+    font-size: 13px;
+    color: #555;
+}
+@media print {
+    body {
+        margin: 0;
+    }
+    .print-page {
+        box-shadow: none;
+        width: 100%;
+        margin: 0;
+    }
+}
+</style>
+{% endblock %}

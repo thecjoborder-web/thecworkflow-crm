@@ -10,6 +10,7 @@ venv/
 # Django
 db.sqlite3
 staticfiles/
+media/
 
 # OS files
 .DS_Store

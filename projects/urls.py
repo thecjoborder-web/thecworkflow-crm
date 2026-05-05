@@ -9,6 +9,7 @@ urlpatterns = [
     path('production/', views.production_dashboard, name='production_dashboard'),
     
     # Project Detail
+    path('<int:project_id>/print/', views.print_project_order, name='print_project_order'),
     path('<int:project_id>/', views.project_detail, name='project_detail'),
     
     # API Endpoints (AJAX)

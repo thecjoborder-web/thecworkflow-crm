@@ -355,6 +355,89 @@
         border-color: #667eea;
     }
 
+    .job-order-panel {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .job-order-header {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
+        align-items: center;
+    }
+
+    .job-order-header h2 {
+        margin-bottom: 8px;
+        font-size: 22px;
+    }
+
+    .job-order-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .job-order-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .job-order-filter {
+        margin-bottom: 20px;
+    }
+
+    .job-order-filter-form {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .job-order-filter-form label {
+        font-weight: 600;
+        color: #555;
+    }
+
+    .job-order-table table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .job-order-table th,
+    .job-order-table td {
+        padding: 12px 14px;
+        border-bottom: 1px solid #f0f0f0;
+        text-align: left;
+        vertical-align: middle;
+        font-size: 14px;
+    }
+
+    .job-order-table th {
+        background: #fafafa;
+        color: #444;
+        font-weight: 700;
+    }
+
+    .job-order-table tbody tr:hover {
+        background: #f9fafb;
+    }
+
+    .job-order-table td .btn {
+        margin-right: 6px;
+    }
+
+    .job-order-table td form {
+        display: inline;
+    }
+
     /* ==================== MODAL ==================== */
     #note-modal {
         position: fixed;
@@ -491,6 +574,95 @@
     <div class="kpi-box">
         <h3>📞 Activities Today</h3>
         <p>{{ activities_today }}</p>
+    </div>
+</div>
+
+<!-- ==================== JOB ORDER SECTION ==================== -->
+<div class="job-order-panel">
+    <div class="job-order-header">
+        <div>
+            <h2>📦 Sales Job Orders</h2>
+            <p>Create job orders, send to project management, and export report data.</p>
+        </div>
+        <div class="job-order-actions">
+            <a href="{% url 'dashboards:create_job_order' %}" class="btn btn-whatsapp">+ New Job Order</a>
+            <a href="{% url 'dashboards:export_job_orders_csv' %}?date_filter={{ date_filter }}" class="btn btn-call">Download Orders</a>
+        </div>
+    </div>
+
+    <div class="job-order-metrics">
+        <div class="kpi-box">
+            <h3>Total Orders</h3>
+            <p>{{ total_job_orders }}</p>
+        </div>
+        <div class="kpi-box">
+            <h3>Active Orders</h3>
+            <p>{{ active_job_orders }}</p>
+        </div>
+        <div class="kpi-box">
+            <h3>Sent to Project</h3>
+            <p>{{ sent_job_orders }}</p>
+        </div>
+        <div class="kpi-box">
+            <h3>Closed Orders</h3>
+            <p>{{ closed_job_orders }}</p>
+        </div>
+    </div>
+
+    <div class="job-order-filter">
+        <form method="get" class="job-order-filter-form">
+            <label for="date_filter">Date Range</label>
+            <select id="date_filter" name="date_filter" onchange="this.form.submit()">
+                <option value="all" {% if date_filter == 'all' %}selected{% endif %}>All</option>
+                <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+                <option value="week" {% if date_filter == 'week' %}selected{% endif %}>This Week</option>
+                <option value="month" {% if date_filter == 'month' %}selected{% endif %}>This Month</option>
+            </select>
+        </form>
+    </div>
+
+    <div class="job-order-table">
+        {% if job_orders %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order No</th>
+                        <th>Customer</th>
+                        <th>Product / Service</th>
+                        <th>Status</th>
+                        <th>Amount</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in job_orders %}
+                        <tr>
+                            <td>{{ order.order_no }}</td>
+                            <td>{{ order.customer_name }}</td>
+                            <td>{{ order.get_product_service_display }}</td>
+                            <td>
+                                <span class="lead-status {{ order.status }}">{{ order.get_status_display }}</span>
+                            </td>
+                            <td>₦{{ order.agreed_amount|floatformat:2 }}</td>
+                            <td>{{ order.created_at|date:'M d, Y' }}</td>
+                            <td>
+                                <a href="{% url 'dashboards:job_order_detail' order_id=order.id %}" class="btn stage-btn">View</a>
+                                <a href="{% url 'dashboards:print_job_order' order_id=order.id %}" target="_blank" class="btn btn-note">Print</a>
+                                {% if order.status == 'draft' %}
+                                    <form action="{% url 'dashboards:send_job_order_to_project' order_id=order.id %}" method="post" style="display:inline; margin:0;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-call">Send to Project</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="empty-stage">No sales job orders yet. Create your first job order.</div>
+        {% endif %}
     </div>
 </div>
 

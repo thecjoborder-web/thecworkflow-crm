@@ -44,7 +44,18 @@ class Project(models.Model):
     # File Upload
     manuscript_file = models.FileField(
         upload_to='projects/manuscripts/%Y/%m/%d/',
-        help_text='Upload project manuscript or main file'
+        help_text='Upload project manuscript or main file',
+        blank=True,
+        null=True
+    )
+    
+    source_job_order = models.ForeignKey(
+        'crm_leads.JobOrder',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='projects',
+        help_text='Original sales job order source'
     )
     
     # Project Specifications
@@ -88,6 +99,28 @@ class Project(models.Model):
         blank=True,
         null=True,
         help_text='Project budget if applicable'
+    )
+    
+    # Financial Fields
+    project_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        help_text='Total project amount'
+    )
+    
+    amount_paid = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        help_text='Amount paid so far'
+    )
+    
+    balance_remaining = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        help_text='Balance remaining to be paid'
     )
     
     # Status & Workflow

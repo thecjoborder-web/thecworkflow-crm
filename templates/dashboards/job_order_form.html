@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-panel">
+    <h1>New Job Order</h1>
+    <p>Create a sales job order and send it to project management when ready.</p>
+
+    <form method="post" enctype="multipart/form-data" class="job-order-form">
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}*{% endif %}</label>
+                {{ field }}
+                {% if field.help_text %}
+                    <small class="help-text">{{ field.help_text }}</small>
+                {% endif %}
+                {% for error in field.errors %}
+                    <div class="field-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-whatsapp">Save Job Order</button>
+        <a href="{% url 'dashboards:sales_dashboard' %}" class="btn btn-note">Cancel</a>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+.page-panel {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    max-width: 1000px;
+    margin: 40px auto;
+}
+.job-order-form {
+    display: grid;
+    gap: 18px;
+}
+.form-group {
+    display: grid;
+    gap: 6px;
+}
+.form-group label {
+    font-weight: 700;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+}
+.help-text {
+    color: #666;
+    font-size: 12px;
+}
+.field-error {
+    color: #c62828;
+    font-size: 13px;
+}
+.btn {
+    padding: 12px 18px;
+    border-radius: 8px;
+}
+</style>
+{% endblock %}

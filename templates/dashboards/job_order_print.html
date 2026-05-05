@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="print-page">
+    <header class="print-header">
+        <div>
+            <h1>THEC WRITERS & PUBLISHERS</h1>
+            <p>📍 Keffi, Nassarawa, Nigeria</p>
+            <p>📞 0816 734 1862 | ✉️ talk2thecservices@gmail.com</p>
+            <p>🌐 www.thecpublishers.com</p>
+        </div>
+        <div class="order-meta">
+            <p><strong>ORDER NO:</strong> {{ job_order.order_no }}</p>
+            <p><strong>Date:</strong> {{ job_order.date|date:'m/d/Y' }}</p>
+        </div>
+    </header>
+
+    <section class="form-section">
+        <h2>CUSTOMER INFORMATION</h2>
+        <div class="grid-two">
+            <div><strong>Full Name:</strong> {{ job_order.customer_name }}</div>
+            <div><strong>Phone Number:</strong> {{ job_order.phone }}</div>
+            <div><strong>Email Address:</strong> {{ job_order.email }}</div>
+            <div><strong>Company / Organization:</strong> {{ job_order.company }}</div>
+            <div class="full"><strong>Delivery Address:</strong> {{ job_order.delivery_address }}</div>
+        </div>
+    </section>
+
+    <section class="form-section">
+        <h2>SELECT PRODUCT / SERVICE</h2>
+        <p>{{ job_order.get_product_service_display }}</p>
+    </section>
+
+    <section class="form-section">
+        <h2>JOB SPECIFICATIONS</h2>
+        <div class="grid-two">
+            <div><strong>Product Title / Description:</strong> {{ job_order.title_description }}</div>
+            <div><strong>Quantity / Copies:</strong> {{ job_order.quantity }}</div>
+            <div><strong>Size / Dimension:</strong> {{ job_order.get_size_dimension_display }}</div>
+            <div><strong>Color Mode:</strong> {{ job_order.get_color_mode_display }}</div>
+            <div><strong>Paper Type:</strong> {{ job_order.get_paper_type_display }}</div>
+            <div><strong>Paper Weight:</strong> {{ job_order.paper_weight }}</div>
+            <div><strong>Binding / Finishing:</strong> {{ job_order.get_binding_display }}</div>
+            <div><strong>Lamination:</strong> {{ job_order.get_lamination_display }}</div>
+            <div><strong>Total Pages:</strong> {{ job_order.total_pages }}</div>
+        </div>
+    </section>
+
+    <section class="form-section">
+        <h2>DESIGN REQUIREMENTS</h2>
+        <div class="grid-two">
+            <div><strong>Design Service Needed:</strong> {{ job_order.get_design_needed_display }}</div>
+            <div><strong>Number of Design Concepts:</strong> {{ job_order.get_design_concepts_display }}</div>
+            <div><strong>Design Style:</strong> {{ job_order.get_design_style_display }}</div>
+            <div><strong>Font Type:</strong> {{ job_order.font_type }}</div>
+            <div><strong>Font Size:</strong> {{ job_order.font_size }}</div>
+            <div><strong>Line Spacing:</strong> {{ job_order.get_line_spacing_display }}</div>
+            <div><strong>ISBN Required?</strong> {{ job_order.isbn_required|yesno:'Yes,No' }}</div>
+        </div>
+    </section>
+
+    <section class="form-section">
+        <h2>ADDITIONAL SPECIFICATIONS</h2>
+        <p>{{ job_order.special_instructions|linebreaksbr }}</p>
+    </section>
+
+    <section class="form-section">
+        <h2>DELIVERY & URGENCY</h2>
+        <div class="grid-two">
+            <div><strong>Delivery Mode:</strong> {{ job_order.get_delivery_mode_display }}</div>
+            <div><strong>Expected Delivery Date:</strong> {{ job_order.expected_delivery_date|date:'m/d/Y' }}</div>
+            <div><strong>Urgency Level:</strong> {{ job_order.get_urgency_level_display }}</div>
+            <div><strong>Source of Deal:</strong> {{ job_order.get_source_of_deal_display }}</div>
+        </div>
+    </section>
+
+    <section class="form-section">
+        <h2>PRICING & PAYMENT</h2>
+        <div class="grid-two">
+            <div><strong>Estimated Budget (₦):</strong> {{ job_order.estimated_budget|floatformat:2 }}</div>
+            <div><strong>Agreed Amount (₦):</strong> {{ job_order.agreed_amount|floatformat:2 }}</div>
+            <div><strong>Part Payment (₦):</strong> {{ job_order.part_payment|floatformat:2 }}</div>
+            <div><strong>Balance Due (₦):</strong> {{ job_order.balance_due|floatformat:2 }}</div>
+        </div>
+        <p class="small-note">Minimum 50% deposit required before production begins. Full payment must be completed before delivery. All prices are subject to change based on final specifications.</p>
+    </section>
+
+    <footer class="print-footer">
+        <p>Customer is responsible for providing print-ready files or paying for design services. Proofing and approval required before final printing. Delivery timeline begins upon receipt of deposit/starting order from client.</p>
+    </footer>
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+.print-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 30px;
+    background: white;
+    color: #111;
+    font-family: Arial, sans-serif;
+}
+.print-header {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    border-bottom: 3px solid #111;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+}
+.print-header h1 {
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+.order-meta p {
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+.form-section {
+    margin-bottom: 22px;
+}
+.form-section h2 {
+    font-size: 18px;
+    margin-bottom: 14px;
+    letter-spacing: 0.7px;
+}
+.grid-two {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+}
+.grid-two div {
+    background: #f7f7f7;
+    padding: 12px 14px;
+    border-radius: 8px;
+}
+.full {
+    grid-column: 1 / -1;
+}
+.small-note {
+    margin-top: 14px;
+    font-size: 13px;
+    color: #444;
+}
+.print-footer {
+    border-top: 1px solid #ddd;
+    padding-top: 16px;
+    font-size: 13px;
+    color: #555;
+}
+@media print {
+    body {
+        margin: 0;
+    }
+    .print-page {
+        box-shadow: none;
+        width: 100%;
+        margin: 0;
+    }
+}
+</style>
+{% endblock %}

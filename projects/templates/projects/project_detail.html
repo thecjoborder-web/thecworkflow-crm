@@ -340,10 +340,30 @@
         {% endif %}
     </div>
 
-    {% if project.special_instructions %}
-    <div style="margin-top: 20px; padding: 15px; background: #FFF9C4; border-left: 3px solid #FBC02D; border-radius: 4px;">
-        <div class="info-label">📝 Special Instructions</div>
-        <div class="description-text" style="margin-top: 8px;">{{ project.special_instructions }}</div>
+    {% if source_job_order %}
+    <div style="margin-top: 20px; padding: 20px; border-radius: 8px; background: #F3E5F5; border: 1px solid #E1BEE7;">
+        <div class="info-label">Source Sales Job Order</div>
+        <div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 12px;">
+            <div class="info-block">
+                <div class="info-label">Order No</div>
+                <div class="info-value">{{ source_job_order.order_no }}</div>
+            </div>
+            <div class="info-block">
+                <div class="info-label">Customer</div>
+                <div class="info-value">{{ source_job_order.customer_name }}</div>
+            </div>
+            <div class="info-block">
+                <div class="info-label">Service</div>
+                <div class="info-value">{{ source_job_order.get_product_service_display }}</div>
+            </div>
+            <div class="info-block">
+                <div class="info-label">Agreed Amount</div>
+                <div class="info-value">₦{{ source_job_order.agreed_amount|floatformat:2 }}</div>
+            </div>
+        </div>
+        <div style="margin-top: 16px;">
+            <a href="{% url 'projects:print_project_order' project.id %}" class="btn btn-primary">🖨️ Print Project Order</a>
+        </div>
     </div>
     {% endif %}
 </div>

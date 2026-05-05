@@ -140,9 +140,25 @@ def project_detail(request, project_id):
         'status_logs': status_logs,
         'can_edit': is_project_supervisor(request.user),
         'can_download': is_production_staff(request.user) and project.sent_to_production,
+        'source_job_order': project.source_job_order,
     }
     
     return render(request, 'projects/project_detail.html', context)
+
+
+# ==================== PROJECT PRINT VIEW ====================
+
+@login_required
+def print_project_order(request, project_id):
+    project = get_object_or_404(Project, id=project_id)
+
+    if not (is_project_supervisor(request.user) or (is_production_staff(request.user) and project.sent_to_production)):
+        return HttpResponse('Access Denied', status=403)
+
+    return render(request, 'projects/project_print.html', {
+        'project': project,
+        'source_job_order': project.source_job_order,
+    })
 
 
 # ==================== UPLOAD PROJECT (AJAX) ====================
