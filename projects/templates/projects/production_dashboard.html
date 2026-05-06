@@ -400,6 +400,7 @@
     <!-- Filters -->
     <div class="filter-bar">
         <input type="text" id="client-search" placeholder="Search by client..." value="{{ client_search }}">
+        <input type="text" id="created-by-search" placeholder="Search by creator..." value="{{ created_by_search }}">
         <select id="status-filter">
             <option value="">All Status</option>
             {% for status_val, status_label in project_statuses %}
@@ -408,7 +409,14 @@
             </option>
             {% endfor %}
         </select>
+        <select id="date-filter">
+            <option value="all" {% if date_filter == 'all' %}selected{% endif %}>All dates</option>
+            <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+            <option value="week" {% if date_filter == 'week' %}selected{% endif %}>This week</option>
+            <option value="month" {% if date_filter == 'month' %}selected{% endif %}>This month</option>
+        </select>
         <button class="btn btn-primary btn-action" onclick="applyFilters()">🔍 Filter</button>
+        <a href="{% url 'projects:production_report' %}?client={{ client_search|urlencode }}&created_by={{ created_by_search|urlencode }}&status={{ status_filter|urlencode }}&date_filter={{ date_filter }}" class="btn btn-primary btn-action" target="_blank">📊 Export Report</a>
     </div>
 
     <!-- Projects List -->
@@ -419,6 +427,7 @@
                 <div>
                     <div class="project-title">{{ project.project_title }}</div>
                     <div class="project-client">👤 {{ project.client_name }}</div>
+                    <div class="project-client">🧑‍💼 Created by: {{ project.created_by.first_name|default:project.created_by.username }}</div>
                     <div class="project-deadline">📅 Due: {{ project.deadline }}</div>
                 </div>
                 <span class="badge badge-{{ project.status }}">
@@ -560,17 +569,25 @@ document.getElementById('status-form').addEventListener('submit', async (e) => {
 // Apply Filters
 function applyFilters() {
     const clientSearch = document.getElementById('client-search').value;
+    const createdBySearch = document.getElementById('created-by-search').value;
     const statusFilter = document.getElementById('status-filter').value;
+    const dateFilter = document.getElementById('date-filter').value;
     
     let url = '?';
     if (clientSearch) url += `client=${encodeURIComponent(clientSearch)}&`;
-    if (statusFilter) url += `status=${encodeURIComponent(statusFilter)}`;
+    if (createdBySearch) url += `created_by=${encodeURIComponent(createdBySearch)}&`;
+    if (statusFilter) url += `status=${encodeURIComponent(statusFilter)}&`;
+    if (dateFilter) url += `date_filter=${encodeURIComponent(dateFilter)}`;
     
     window.location.href = url;
 }
 
 // Allow Enter in search
-document.getElementById('client-search').addEventListener('keypress', (e) => {
+const productionClientSearch = document.getElementById('client-search');
+productionClientSearch.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') applyFilters();
+});
+document.getElementById('created-by-search').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') applyFilters();
 });
 

@@ -477,11 +477,19 @@
     <!-- Filters -->
     <div class="filter-bar">
         <input type="text" id="client-search" placeholder="Search by client name..." value="{{ client_search }}">
+        <input type="text" id="created-by-search" placeholder="Search by creator..." value="{{ created_by_search }}">
+        <select id="date-filter">
+            <option value="all" {% if date_filter == 'all' %}selected{% endif %}>All dates</option>
+            <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+            <option value="week" {% if date_filter == 'week' %}selected{% endif %}>This week</option>
+            <option value="month" {% if date_filter == 'month' %}selected{% endif %}>This month</option>
+        </select>
         <label class="filter-checkbox">
             <input type="checkbox" id="my-projects-filter" {% if my_projects_only %}checked{% endif %}>
             <label for="my-projects-filter">My Projects Only</label>
         </label>
         <button class="btn btn-secondary btn-action" onclick="applyFilters()">🔍 Filter</button>
+        <a href="{% url 'projects:supervisor_report' %}?client={{ client_search|urlencode }}&created_by={{ created_by_search|urlencode }}&my_projects={% if my_projects_only %}on{% endif %}&date_filter={{ date_filter }}" class="btn btn-secondary btn-action" target="_blank">📊 Export Report</a>
     </div>
 
     <!-- Projects Table -->
@@ -503,6 +511,7 @@
                 <tr>
                     <td>{{ project.project_title }}</td>
                     <td>{{ project.client_name }}</td>
+                    <td>{% if project.source_job_order %}{{ project.source_job_order.order_no }}{% else %}—{% endif %}</td>
                     <td>
                         <span class="badge badge-{{ project.status }}">
                             {{ project.get_status_display }}
@@ -612,18 +621,27 @@ async function sendToProduction(projectId) {
 // Apply Filters
 function applyFilters() {
     const clientSearch = document.getElementById('client-search').value;
+    const createdBySearch = document.getElementById('created-by-search').value;
+    const dateFilter = document.getElementById('date-filter').value;
     const myProjectsOnly = document.getElementById('my-projects-filter').checked;
     
     let url = '?';
     if (clientSearch) url += `client=${encodeURIComponent(clientSearch)}&`;
+    if (createdBySearch) url += `created_by=${encodeURIComponent(createdBySearch)}&`;
+    if (dateFilter) url += `date_filter=${encodeURIComponent(dateFilter)}&`;
     if (myProjectsOnly) url += 'my_projects=on';
     
     window.location.href = url;
 }
 
 // Allow Enter key in search
-document.getElementById('client-search').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') applyFilters();
+['client-search', 'created-by-search'].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+        element.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') applyFilters();
+        });
+    }
 });
 </script>
 {% endblock %}

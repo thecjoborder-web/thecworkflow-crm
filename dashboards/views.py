@@ -568,105 +568,45 @@ def is_sales_agent(user):
 @login_required
 @user_passes_test(is_sales_agent)
 def sales_dashboard(request):
-    """
-    Sales dashboard with pipeline stages, KPI metrics, activity tracking, and job orders.
-    """
+    return redirect('dashboards:job_order_home')
+
+
+@login_required
+@user_passes_test(is_sales_agent)
+def job_order_dashboard(request):
     user = request.user
-    
-    # Get all leads assigned to this user
-    leads = Lead.objects.filter(assigned_to=user)
-    
-    # Filter leads by status (pipeline stages)
-    assigned_leads = leads.filter(status="assigned")
-    contacted_leads = leads.filter(status="contacted")
-    awaiting_leads = leads.filter(status="awaiting")
-    closed_leads = leads.filter(status="closed")
-    lost_leads = leads.filter(status="lost")
-    
-    # Get job orders created by this user
-    job_orders = JobOrder.objects.filter(created_by=user)
-    draft_orders = job_orders.filter(status="draft")
-    sent_orders = job_orders.filter(status="sent_to_project")
-    closed_orders = job_orders.filter(status="closed")
-    
-    # KPI Metrics
-    total_leads = leads.count()
-    active_leads = leads.exclude(status__in=["closed", "lost"]).count()
-    awaiting_count = awaiting_leads.count()
-    closed_count = closed_leads.count()
-    
-    # Job Order Metrics
-    total_job_orders = job_orders.count()
-    active_job_orders = job_orders.exclude(status="closed").count()
-    sent_job_orders = sent_orders.count()
-    closed_job_orders = closed_orders.count()
-    
-    # Conversion rate calculation
-    conversion_rate = (
-        (closed_count / total_leads) * 100
-        if total_leads > 0 else 0
-    )
-    
-    # Daily activity tracking
-    activities_today = LeadActivity.objects.filter(
-        user=user,
-        created_at__date=date.today()
-    ).count()
-    
-    # Activity filtering (optional filter_type parameter)
-    filter_type = request.GET.get("type")
-    all_activities = LeadActivity.objects.filter(user=user).order_by('-created_at')
-    if filter_type:
-        all_activities = all_activities.filter(activity_type=filter_type)
-    
-    # Date filtering for job orders (daily/weekly/monthly)
-    date_filter = request.GET.get("date_filter", "all")
-    if date_filter == "today":
+    job_orders = JobOrder.objects.filter(created_by=user).order_by('-created_at')
+
+    status_filter = request.GET.get('status', 'all')
+    date_filter = request.GET.get('date_filter', 'all')
+
+    if status_filter != 'all':
+        job_orders = job_orders.filter(status=status_filter)
+
+    if date_filter == 'today':
         job_orders = job_orders.filter(created_at__date=date.today())
-    elif date_filter == "week":
+    elif date_filter == 'week':
         week_start = date.today() - timedelta(days=date.today().weekday())
         job_orders = job_orders.filter(created_at__date__gte=week_start)
-    elif date_filter == "month":
+    elif date_filter == 'month':
         month_start = date.today().replace(day=1)
         job_orders = job_orders.filter(created_at__date__gte=month_start)
 
-    job_orders = job_orders.order_by('-created_at')
-    
+    draft_orders = job_orders.filter(status='draft')
+    sent_orders = job_orders.filter(status='sent_to_project')
+    closed_orders = job_orders.filter(status='closed')
+
     context = {
-        # Pipeline stages
-        "assigned_leads": assigned_leads,
-        "contacted_leads": contacted_leads,
-        "awaiting_leads": awaiting_leads,
-        "closed_leads": closed_leads,
-        "lost_leads": lost_leads,
-        
-        # Job Orders
-        "job_orders": job_orders,
-        "draft_orders": draft_orders,
-        "sent_orders": sent_orders,
-        "closed_orders": closed_orders,
-        
-        # KPI metrics
-        "total_leads": total_leads,
-        "active_leads": active_leads,
-        "awaiting_count": awaiting_count,
-        "closed_count": closed_count,
-        "conversion_rate": round(conversion_rate, 2),
-        "activities_today": activities_today,
-        
-        # Job Order metrics
-        "total_job_orders": total_job_orders,
-        "active_job_orders": active_job_orders,
-        "sent_job_orders": sent_job_orders,
-        "closed_job_orders": closed_job_orders,
-        
-        # All activities for filtering
-        "activities": all_activities,
-        "selected_filter": filter_type or "",
-        "date_filter": date_filter,
+        'job_orders': job_orders,
+        'total_job_orders': job_orders.count(),
+        'draft_orders': draft_orders.count(),
+        'sent_job_orders': sent_orders.count(),
+        'closed_job_orders': closed_orders.count(),
+        'status_filter': status_filter,
+        'date_filter': date_filter,
     }
-    
-    return render(request, "dashboards/sales_dashboard.html", context)
+
+    return render(request, 'dashboards/job_order_dashboard.html', context)
 
 
 # --------------------------

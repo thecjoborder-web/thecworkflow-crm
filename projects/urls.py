@@ -21,4 +21,8 @@ urlpatterns = [
     # Notifications
     path('notifications/get/', views.get_notifications, name='get_notifications'),
     path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
+    
+    # Reports
+    path('supervisor/report/', views.project_supervisor_report, name='supervisor_report'),
+    path('production/report/', views.production_report, name='production_report'),
 ]

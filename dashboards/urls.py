@@ -5,11 +5,12 @@ urlpatterns = [
     path("admin/", views.admin_dashboard, name="admin_dashboard"),
     path("ceo/", views.ceo_dashboard, name="ceo_dashboard"),
     path("sales/", views.sales_dashboard, name="sales_dashboard"),
-    path("sales/job-order/new/", views.create_job_order, name="create_job_order"),
-    path("sales/job-order/<int:order_id>/", views.job_order_detail, name="job_order_detail"),
-    path("sales/job-order/<int:order_id>/send-to-project/", views.send_job_order_to_project, name="send_job_order_to_project"),
-    path("sales/job-order/<int:order_id>/print/", views.print_job_order, name="print_job_order"),
-    path("sales/job-orders/export/", views.export_job_orders_csv, name="export_job_orders_csv"),
+    path("job-order/", views.sales_dashboard, name="job_order_home"),
+    path("job-order/new/", views.create_job_order, name="create_job_order"),
+    path("job-order/<int:order_id>/", views.job_order_detail, name="job_order_detail"),
+    path("job-order/<int:order_id>/send-to-project/", views.send_job_order_to_project, name="send_job_order_to_project"),
+    path("job-order/<int:order_id>/print/", views.print_job_order, name="print_job_order"),
+    path("job-orders/export/", views.export_job_orders_csv, name="export_job_orders_csv"),
 
     # Lead actions
     path(

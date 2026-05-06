@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse, FileResponse, HttpResponse
@@ -48,10 +48,30 @@ def project_supervisor_dashboard(request):
     if client_search:
         projects = projects.filter(Q(client_name__icontains=client_search))
     
+    # Search by creator name
+    created_by_search = request.GET.get('created_by', '').strip()
+    if created_by_search:
+        projects = projects.filter(
+            Q(created_by__first_name__icontains=created_by_search) |
+            Q(created_by__last_name__icontains=created_by_search) |
+            Q(created_by__username__icontains=created_by_search)
+        )
+    
     # Filter by created_by (only my projects)
     my_projects_only = request.GET.get('my_projects') == 'on'
     if my_projects_only:
         projects = projects.filter(created_by=request.user)
+
+    # Date filter for project uploads
+    date_filter = request.GET.get('date_filter', 'all')
+    if date_filter == 'today':
+        projects = projects.filter(created_at__date=date.today())
+    elif date_filter == 'week':
+        week_start = date.today() - timedelta(days=date.today().weekday())
+        projects = projects.filter(created_at__date__gte=week_start)
+    elif date_filter == 'month':
+        month_start = date.today().replace(day=1)
+        projects = projects.filter(created_at__date__gte=month_start)
     
     # Get stats
     total_projects = Project.objects.count()
@@ -66,7 +86,9 @@ def project_supervisor_dashboard(request):
         'sent_to_production': sent_to_production,
         'in_production': in_production,
         'client_search': client_search,
+        'created_by_search': created_by_search,
         'my_projects_only': my_projects_only,
+        'date_filter': date_filter,
     }
     
     return render(request, 'projects/project_supervisor_dashboard.html', context)
@@ -95,11 +117,31 @@ def production_dashboard(request):
     client_search = request.GET.get('client', '').strip()
     if client_search:
         projects = projects.filter(Q(client_name__icontains=client_search))
+
+    # Search by creator name
+    created_by_search = request.GET.get('created_by', '').strip()
+    if created_by_search:
+        projects = projects.filter(
+            Q(created_by__first_name__icontains=created_by_search) |
+            Q(created_by__last_name__icontains=created_by_search) |
+            Q(created_by__username__icontains=created_by_search)
+        )
     
     # Filter by status
     status_filter = request.GET.get('status', '').strip()
     if status_filter:
         projects = projects.filter(status=status_filter)
+
+    # Date filter for production projects
+    date_filter = request.GET.get('date_filter', 'all')
+    if date_filter == 'today':
+        projects = projects.filter(sent_to_production_at__date=date.today())
+    elif date_filter == 'week':
+        week_start = date.today() - timedelta(days=date.today().weekday())
+        projects = projects.filter(sent_to_production_at__date__gte=week_start)
+    elif date_filter == 'month':
+        month_start = date.today().replace(day=1)
+        projects = projects.filter(sent_to_production_at__date__gte=month_start)
     
     # Get stats
     total_projects = Project.objects.filter(sent_to_production=True).count()
@@ -114,7 +156,9 @@ def production_dashboard(request):
         'completed': completed,
         'ready_for_pickup': ready_for_pickup,
         'client_search': client_search,
+        'created_by_search': created_by_search,
         'status_filter': status_filter,
+        'date_filter': date_filter,
         'project_statuses': Project.PROJECT_STATUSES,
     }
     
@@ -418,3 +462,591 @@ def mark_notification_read(request, notification_id):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+# ==================== REPORT GENERATION ====================
+
+@login_required
+@user_passes_test(is_project_supervisor)
+def project_supervisor_report(request):
+    """
+    Generate HTML report for Project Supervisor Dashboard
+    - Shows projects uploaded + job orders
+    - Respects current filters (client, creator, date)
+    - Can be viewed/printed in browser
+    """
+    from crm_leads.models import JobOrder
+    
+    # Get filtered projects
+    projects = Project.objects.all().select_related('created_by').order_by('-created_at')
+    
+    # Apply filters
+    client_search = request.GET.get('client', '').strip()
+    if client_search:
+        projects = projects.filter(Q(client_name__icontains=client_search))
+    
+    created_by_search = request.GET.get('created_by', '').strip()
+    if created_by_search:
+        projects = projects.filter(
+            Q(created_by__first_name__icontains=created_by_search) |
+            Q(created_by__last_name__icontains=created_by_search) |
+            Q(created_by__username__icontains=created_by_search)
+        )
+    
+    my_projects_only = request.GET.get('my_projects') == 'on'
+    if my_projects_only:
+        projects = projects.filter(created_by=request.user)
+    
+    date_filter = request.GET.get('date_filter', 'all')
+    if date_filter == 'today':
+        projects = projects.filter(created_at__date=date.today())
+    elif date_filter == 'week':
+        week_start = date.today() - timedelta(days=date.today().weekday())
+        projects = projects.filter(created_at__date__gte=week_start)
+    elif date_filter == 'month':
+        month_start = date.today().replace(day=1)
+        projects = projects.filter(created_at__date__gte=month_start)
+    
+    # Get job orders (for separate section)
+    job_orders = JobOrder.objects.all().select_related('created_by').order_by('-date')
+    
+    if date_filter == 'today':
+        job_orders = job_orders.filter(date=date.today())
+    elif date_filter == 'week':
+        week_start = date.today() - timedelta(days=date.today().weekday())
+        job_orders = job_orders.filter(date__gte=week_start)
+    elif date_filter == 'month':
+        month_start = date.today().replace(day=1)
+        job_orders = job_orders.filter(date__gte=month_start)
+    
+    # Get date range label for title
+    date_range_label = 'All Time'
+    if date_filter == 'today':
+        date_range_label = f'Today ({date.today().strftime("%B %d, %Y")})'
+    elif date_filter == 'week':
+        week_start = date.today() - timedelta(days=date.today().weekday())
+        week_end = week_start + timedelta(days=6)
+        date_range_label = f'Week of {week_start.strftime("%B %d")} - {week_end.strftime("%B %d, %Y")}'
+    elif date_filter == 'month':
+        month_start = date.today().replace(day=1)
+        month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        date_range_label = month_start.strftime('%B %Y')
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Project Supervisor Report - {date_range_label}</title>
+        <style>
+            * {{
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }}
+            body {{
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                color: #333;
+                line-height: 1.6;
+            }}
+            .container {{
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 40px 20px;
+            }}
+            .header {{
+                text-align: center;
+                margin-bottom: 40px;
+                border-bottom: 3px solid #D32F2F;
+                padding-bottom: 20px;
+            }}
+            .header h1 {{
+                font-size: 28px;
+                color: #D32F2F;
+                margin-bottom: 10px;
+            }}
+            .header p {{
+                color: #666;
+                font-size: 14px;
+            }}
+            .section {{
+                margin-bottom: 40px;
+                break-inside: avoid;
+            }}
+            .section-title {{
+                font-size: 18px;
+                font-weight: 700;
+                color: #1a1a1a;
+                border-bottom: 2px solid #D32F2F;
+                padding-bottom: 10px;
+                margin-bottom: 20px;
+            }}
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }}
+            thead {{
+                background-color: #f5f5f5;
+                border-bottom: 2px solid #2196F3;
+            }}
+            th {{
+                padding: 12px;
+                text-align: left;
+                font-weight: 600;
+                color: #333;
+                font-size: 12px;
+                text-transform: uppercase;
+            }}
+            td {{
+                padding: 10px 12px;
+                border-bottom: 1px solid #e0e0e0;
+                font-size: 13px;
+                color: #666;
+            }}
+            tbody tr:nth-child(even) {{
+                background-color: #f9f9f9;
+            }}
+            .empty {{
+                padding: 20px;
+                text-align: center;
+                color: #999;
+                background: #f9f9f9;
+                border-radius: 4px;
+            }}
+            .filter-info {{
+                background: #E3F2FD;
+                padding: 12px;
+                border-radius: 4px;
+                margin-bottom: 20px;
+                font-size: 13px;
+                color: #1565C0;
+            }}
+            .badge {{
+                display: inline-block;
+                padding: 3px 8px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+            }}
+            .badge-submitted {{
+                background: #E3F2FD;
+                color: #1565C0;
+            }}
+            .badge-sent_to_project {{
+                background: #FFF3E0;
+                color: #E65100;
+            }}
+            .badge-in_production {{
+                background: #FCE4EC;
+                color: #880E4F;
+            }}
+            .badge-completed {{
+                background: #E8F5E9;
+                color: #1B5E20;
+            }}
+            .amount {{
+                text-align: right;
+                font-weight: 600;
+                color: #D32F2F;
+            }}
+            .footer {{
+                margin-top: 40px;
+                padding-top: 20px;
+                border-top: 1px solid #ddd;
+                text-align: center;
+                color: #999;
+                font-size: 12px;
+            }}
+            @media print {{
+                body {{
+                    padding: 0;
+                }}
+                .container {{
+                    padding: 20px;
+                }}
+                .section {{
+                    page-break-inside: avoid;
+                }}
+                .no-print {{
+                    display: none !important;
+                }}
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>📋 Project Supervisor Report</h1>
+                <p>Report Period: {date_range_label}</p>
+                <p>Generated on {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</p>
+            </div>
+            
+            {f'<div class="filter-info">Applied Filters: Client: {client_search or "None"} | Creator: {created_by_search or "None"} | My Projects Only: {"Yes" if my_projects_only else "No"}</div>' if (client_search or created_by_search or my_projects_only) else ''}
+            
+            <!-- Projects Section -->
+            <div class="section">
+                <div class="section-title">📤 Projects Uploaded ({projects.count()})</div>
+                {'<table><thead><tr><th>Project Title</th><th>Client</th><th>Created By</th><th>Status</th><th>Deadline</th><th>Description</th></tr></thead><tbody>' + ''.join(f'''<tr>
+                    <td><strong>{p.project_title}</strong></td>
+                    <td>{p.client_name}</td>
+                    <td>{p.created_by.first_name or p.created_by.username}</td>
+                    <td><span class="badge badge-{p.status}">{p.get_status_display()}</span></td>
+                    <td>{p.deadline.strftime("%b %d, %Y") if p.deadline else "N/A"}</td>
+                    <td>{(p.project_description[:50] + "...") if p.project_description else "—"}</td>
+                </tr>''' for p in projects) + '</tbody></table>' if projects else '<div class="empty">No projects found</div>'}
+            </div>
+            
+            <!-- Job Orders Section -->
+            <div class="section">
+                <div class="section-title">📑 Job Orders ({job_orders.count()})</div>
+                {'<table><thead><tr><th>Order #</th><th>Customer</th><th>Service</th><th>Quantity</th><th>Amount</th><th>Status</th><th>Expected Delivery</th></tr></thead><tbody>' + ''.join(f'''<tr>
+                    <td><strong>{jo.order_no}</strong></td>
+                    <td>{jo.customer_name}</td>
+                    <td>{jo.get_product_service_display()}</td>
+                    <td>{jo.quantity}</td>
+                    <td class="amount">₦{jo.agreed_amount:,.2f}</td>
+                    <td><span class="badge badge-{jo.status}">{jo.get_status_display()}</span></td>
+                    <td>{jo.expected_delivery_date.strftime("%b %d, %Y") if jo.expected_delivery_date else "N/A"}</td>
+                </tr>''' for jo in job_orders) + '</tbody></table>' if job_orders else '<div class="empty">No job orders found</div>'}
+            </div>
+            
+            <div class="footer">
+                <p>This report was generated from the Project Management System</p>
+                <p style="margin-top: 10px;"><strong>Note:</strong> Print this page using Ctrl+P or the browser Print option. Choose "Print to PDF" for digital archiving.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return HttpResponse(html_content, content_type='text/html')
+
+
+@login_required
+@user_passes_test(is_production_staff)
+def production_report(request):
+    """
+    Generate HTML report for Production Dashboard
+    - Shows projects sent to production
+    - Respects current filters (client, creator, status, date)
+    - Can be viewed/printed in browser
+    """
+    # Get filtered projects sent to production
+    projects = Project.objects.filter(
+        sent_to_production=True
+    ).select_related('created_by').order_by('-sent_to_production_at')
+    
+    # Apply filters
+    client_search = request.GET.get('client', '').strip()
+    if client_search:
+        projects = projects.filter(Q(client_name__icontains=client_search))
+    
+    created_by_search = request.GET.get('created_by', '').strip()
+    if created_by_search:
+        projects = projects.filter(
+            Q(created_by__first_name__icontains=created_by_search) |
+            Q(created_by__last_name__icontains=created_by_search) |
+            Q(created_by__username__icontains=created_by_search)
+        )
+    
+    status_filter = request.GET.get('status', '').strip()
+    if status_filter:
+        projects = projects.filter(status=status_filter)
+    
+    date_filter = request.GET.get('date_filter', 'all')
+    if date_filter == 'today':
+        projects = projects.filter(sent_to_production_at__date=date.today())
+    elif date_filter == 'week':
+        week_start = date.today() - timedelta(days=date.today().weekday())
+        projects = projects.filter(sent_to_production_at__date__gte=week_start)
+    elif date_filter == 'month':
+        month_start = date.today().replace(day=1)
+        projects = projects.filter(sent_to_production_at__date__gte=month_start)
+    
+    # Get date range label for title
+    date_range_label = 'All Time'
+    if date_filter == 'today':
+        date_range_label = f'Today ({date.today().strftime("%B %d, %Y")})'
+    elif date_filter == 'week':
+        week_start = date.today() - timedelta(days=date.today().weekday())
+        week_end = week_start + timedelta(days=6)
+        date_range_label = f'Week of {week_start.strftime("%B %d")} - {week_end.strftime("%B %d, %Y")}'
+    elif date_filter == 'month':
+        month_start = date.today().replace(day=1)
+        month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        date_range_label = month_start.strftime('%B %Y')
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Production Report - {date_range_label}</title>
+        <style>
+            * {{
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }}
+            body {{
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                color: #333;
+                line-height: 1.6;
+            }}
+            .container {{
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 40px 20px;
+            }}
+            .header {{
+                text-align: center;
+                margin-bottom: 40px;
+                border-bottom: 3px solid #FF9800;
+                padding-bottom: 20px;
+            }}
+            .header h1 {{
+                font-size: 28px;
+                color: #FF9800;
+                margin-bottom: 10px;
+            }}
+            .header p {{
+                color: #666;
+                font-size: 14px;
+            }}
+            .section {{
+                margin-bottom: 40px;
+                break-inside: avoid;
+            }}
+            .section-title {{
+                font-size: 18px;
+                font-weight: 700;
+                color: #1a1a1a;
+                border-bottom: 2px solid #FF9800;
+                padding-bottom: 10px;
+                margin-bottom: 20px;
+            }}
+            .project-item {{
+                border: 1px solid #e0e0e0;
+                border-radius: 6px;
+                padding: 15px;
+                margin-bottom: 15px;
+                background: white;
+            }}
+            .project-item:hover {{
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }}
+            .project-header {{
+                display: flex;
+                justify-content: space-between;
+                align-items: start;
+                margin-bottom: 10px;
+            }}
+            .project-title {{
+                font-size: 16px;
+                font-weight: 700;
+                color: #333;
+            }}
+            .project-meta {{
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                font-size: 13px;
+                margin-bottom: 10px;
+            }}
+            .meta-item {{
+                color: #666;
+            }}
+            .meta-label {{
+                font-weight: 600;
+                color: #333;
+            }}
+            .badge {{
+                display: inline-block;
+                padding: 4px 10px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+            }}
+            .badge-in_production {{
+                background: #FFF3E0;
+                color: #E65100;
+            }}
+            .badge-completed {{
+                background: #E8F5E9;
+                color: #1B5E20;
+            }}
+            .badge-ready_for_pickup {{
+                background: #FCE4EC;
+                color: #880E4F;
+            }}
+            .badge-submitted {{
+                background: #E3F2FD;
+                color: #1565C0;
+            }}
+            .specs {{
+                background: #f9f9f9;
+                padding: 10px;
+                border-radius: 4px;
+                font-size: 12px;
+                margin-top: 10px;
+            }}
+            .specs-grid {{
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 10px;
+            }}
+            .spec {{
+                padding: 5px;
+            }}
+            .spec-label {{
+                font-weight: 600;
+                color: #333;
+                font-size: 11px;
+            }}
+            .spec-value {{
+                color: #666;
+                font-size: 12px;
+            }}
+            .empty {{
+                padding: 30px;
+                text-align: center;
+                color: #999;
+                background: #f9f9f9;
+                border-radius: 4px;
+                border: 1px dashed #ddd;
+            }}
+            .filter-info {{
+                background: #FFF3E0;
+                padding: 12px;
+                border-radius: 4px;
+                margin-bottom: 20px;
+                font-size: 13px;
+                color: #E65100;
+            }}
+            .footer {{
+                margin-top: 40px;
+                padding-top: 20px;
+                border-top: 1px solid #ddd;
+                text-align: center;
+                color: #999;
+                font-size: 12px;
+            }}
+            .stats {{
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 15px;
+                margin-bottom: 30px;
+            }}
+            .stat-card {{
+                background: #f5f5f5;
+                padding: 15px;
+                border-radius: 4px;
+                text-align: center;
+            }}
+            .stat-value {{
+                font-size: 24px;
+                font-weight: 700;
+                color: #FF9800;
+            }}
+            .stat-label {{
+                font-size: 12px;
+                color: #666;
+                text-transform: uppercase;
+            }}
+            @media print {{
+                body {{
+                    padding: 0;
+                }}
+                .container {{
+                    padding: 20px;
+                }}
+                .project-item {{
+                    page-break-inside: avoid;
+                }}
+                .no-print {{
+                    display: none !important;
+                }}
+            }}
+            @media (max-width: 768px) {{
+                .project-meta {{
+                    grid-template-columns: 1fr;
+                }}
+                .stats {{
+                    grid-template-columns: repeat(2, 1fr);
+                }}
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🏭 Production Report</h1>
+                <p>Report Period: {date_range_label}</p>
+                <p>Generated on {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</p>
+            </div>
+            
+            {f'<div class="filter-info">Applied Filters: Client: {client_search or "All"} | Creator: {created_by_search or "All"} | Status: {status_filter or "All"}</div>' if (client_search or created_by_search or status_filter) else ''}
+            
+            <!-- Statistics -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value">{projects.filter(status="in_production").count()}</div>
+                    <div class="stat-label">In Production</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{projects.filter(status="completed").count()}</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{projects.filter(status="ready_for_pickup").count()}</div>
+                    <div class="stat-label">Ready for Pickup</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{projects.count()}</div>
+                    <div class="stat-label">Total Projects</div>
+                </div>
+            </div>
+            
+            <!-- Projects Section -->
+            <div class="section">
+                <div class="section-title">📦 Production Projects Received ({projects.count()})</div>
+                {'<div>' + ''.join(f'''<div class="project-item">
+                    <div class="project-header">
+                        <div>
+                            <div class="project-title">{p.project_title}</div>
+                            <div style="font-size: 12px; color: #999; margin-top: 3px;">Order: {p.source_job_order.order_no if p.source_job_order else "N/A"}</div>
+                        </div>
+                        <span class="badge badge-{p.status}">{p.get_status_display()}</span>
+                    </div>
+                    <div class="project-meta">
+                        <div class="meta-item"><span class="meta-label">👤 Client:</span> {p.client_name}</div>
+                        <div class="meta-item"><span class="meta-label">👨‍💼 Created By:</span> {p.created_by.first_name or p.created_by.username}</div>
+                        <div class="meta-item"><span class="meta-label">📅 Deadline:</span> {p.deadline.strftime("%b %d, %Y") if p.deadline else "N/A"}</div>
+                        <div class="meta-item"><span class="meta-label">📧 Sent to Production:</span> {p.sent_to_production_at.strftime("%b %d, %Y %I:%M %p") if p.sent_to_production_at else "N/A"}</div>
+                    </div>
+                    <div class="specs">
+                        <div class="specs-grid">
+                            <div class="spec"><div class="spec-label">Copies:</div><div class="spec-value">{p.number_of_copies}</div></div>
+                            <div class="spec"><div class="spec-label">Font:</div><div class="spec-value">{p.font_type or "N/A"}</div></div>
+                            <div class="spec"><div class="spec-label">Paper:</div><div class="spec-value">{p.paper_type or "N/A"}</div></div>
+                            <div class="spec"><div class="spec-label">Binding:</div><div class="spec-value">{p.get_binding_type_display() if p.binding_type else "None"}</div></div>
+                            <div class="spec"><div class="spec-label">Color:</div><div class="spec-value">{p.get_color_requirement_display() if p.color_requirement else "N/A"}</div></div>
+                        </div>
+                    </div>
+                    {f'<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #666;">📝 {p.project_description}</div>' if p.project_description else ''}
+                </div>''' for p in projects) + '</div>' if projects else '<div class="empty">📭 No production projects found for this period</div>'}
+            </div>
+            
+            <div class="footer">
+                <p>This report was generated from the Production Management System</p>
+                <p style="margin-top: 10px;"><strong>Note:</strong> Print this page using Ctrl+P or the browser Print option. Choose "Print to PDF" for digital archiving.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return HttpResponse(html_content, content_type='text/html')
