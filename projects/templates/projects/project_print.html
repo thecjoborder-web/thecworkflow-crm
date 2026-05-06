@@ -23,13 +23,16 @@
         <h2>PROJECT DETAILS</h2>
         <div class="grid-two">
             <div><strong>Client Name:</strong> {{ project.client_name }}</div>
-            <div><strong>Contact Email:</strong> {{ project.contact_email }}</div>
-            <div><strong>Phone:</strong> {{ project.client_contact }}</div>
+            <div><strong>Client Contact:</strong> {{ project.client_contact }}</div>
+            <div><strong>Client Location:</strong> {{ project.client_location|default:'N/A' }}</div>
+            <div><strong>Delivery Location:</strong> {{ project.delivery_location|default:'N/A' }}</div>
             <div><strong>Status:</strong> {{ project.get_status_display }}</div>
             <div><strong>Deadline:</strong> {{ project.deadline|date:'m/d/Y' }}</div>
-            <div><strong>Budget:</strong> ₦{{ project.project_amount|floatformat:2 }}</div>
-            <div><strong>Amount Paid:</strong> ₦{{ project.amount_paid|floatformat:2 }}</div>
-            <div><strong>Balance Remaining:</strong> ₦{{ project.balance_remaining|floatformat:2 }}</div>
+            <div><strong>Estimated Budget:</strong> ₦{{ project.estimated_budget|floatformat:2 }}</div>
+            <div><strong>Agreed Amount:</strong> ₦{{ project.agreed_amount|floatformat:2 }}</div>
+            <div><strong>Part Payment:</strong> ₦{{ project.part_payment|floatformat:2 }}</div>
+            <div><strong>Balance Due:</strong> ₦{{ project.balance_due|floatformat:2 }}</div>
+            <div><strong>ISBN Required:</strong> {{ project.isbn_required|yesno:"Yes,No" }}</div>
         </div>
     </section>
 
@@ -37,9 +40,12 @@
         <h2>SPECIFICATIONS</h2>
         <div class="grid-two">
             <div><strong>Copies:</strong> {{ project.number_of_copies }}</div>
+            <div><strong>Line Spacing:</strong> {{ project.line_spacing|default:'N/A' }}</div>
             <div><strong>Font:</strong> {{ project.font_type }}</div>
             <div><strong>Color:</strong> {{ project.get_color_requirement_display }}</div>
-            <div><strong>Paper:</strong> {{ project.paper_type }}</div>
+            <div><strong>Paper Type:</strong> {{ project.paper_type }}</div>
+            <div><strong>Paper Size:</strong> {{ project.paper_size|default:'N/A' }}</div>
+            <div><strong>Paper Weight:</strong> {{ project.paper_weight|default:'N/A' }}</div>
             <div><strong>Binding:</strong> {{ project.get_binding_type_display }}</div>
         </div>
     </section>

@@ -402,6 +402,16 @@
             </div>
 
             <div class="form-group">
+                <label for="client_location">Client Location</label>
+                <input type="text" name="client_location" placeholder="e.g., Lagos, Nigeria">
+            </div>
+
+            <div class="form-group">
+                <label for="delivery_location">Delivery Location</label>
+                <input type="text" name="delivery_location" placeholder="e.g., Abuja Office">
+            </div>
+
+            <div class="form-group">
                 <label for="project_date">Project Start Date *</label>
                 <input type="date" name="project_date" required>
             </div>
@@ -414,6 +424,11 @@
             <div class="form-group">
                 <label for="number_of_copies">Number of Copies</label>
                 <input type="number" name="number_of_copies" value="1" min="1">
+            </div>
+
+            <div class="form-group">
+                <label for="line_spacing">Line Spacing</label>
+                <input type="text" name="line_spacing" placeholder="e.g., Single, 1.5, Double">
             </div>
 
             <div class="form-group">
@@ -435,6 +450,16 @@
             </div>
 
             <div class="form-group">
+                <label for="paper_size">Paper Size</label>
+                <input type="text" name="paper_size" placeholder="e.g., A4, A3, Letter">
+            </div>
+
+            <div class="form-group">
+                <label for="paper_weight">Paper Weight</label>
+                <input type="text" name="paper_weight" placeholder="e.g., 80gsm, 100gsm">
+            </div>
+
+            <div class="form-group">
                 <label for="binding_type">Binding Type</label>
                 <select name="binding_type">
                     <option value="spiral">Spiral Binding</option>
@@ -446,8 +471,28 @@
             </div>
 
             <div class="form-group">
-                <label for="budget">Budget</label>
-                <input type="number" name="budget" placeholder="0.00" step="0.01">
+                <label for="isbn_required">ISBN Required</label>
+                <input type="checkbox" name="isbn_required">
+            </div>
+
+            <div class="form-group">
+                <label for="estimated_budget">Estimated Budget</label>
+                <input type="number" name="estimated_budget" placeholder="0.00" step="0.01">
+            </div>
+
+            <div class="form-group">
+                <label for="agreed_amount">Agreed Amount</label>
+                <input type="number" name="agreed_amount" placeholder="0.00" step="0.01">
+            </div>
+
+            <div class="form-group">
+                <label for="part_payment">Part Payment</label>
+                <input type="number" name="part_payment" placeholder="0.00" step="0.01">
+            </div>
+
+            <div class="form-group">
+                <label for="balance_due">Balance Due</label>
+                <input type="number" name="balance_due" placeholder="0.00" step="0.01">
             </div>
         </div>
 

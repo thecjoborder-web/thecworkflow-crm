@@ -11,19 +11,19 @@ class ProjectAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Project Information', {
-            'fields': ('project_title', 'project_description', 'client_name', 'client_contact')
+            'fields': ('project_title', 'project_description', 'client_name', 'client_contact', 'client_location', 'delivery_location')
         }),
         ('File', {
             'fields': ('manuscript_file',)
         }),
         ('Specifications', {
-            'fields': ('number_of_copies', 'font_type', 'color_requirement', 'paper_type', 'binding_type')
+            'fields': ('number_of_copies', 'line_spacing', 'font_type', 'color_requirement', 'paper_type', 'paper_size', 'paper_weight', 'binding_type', 'isbn_required')
         }),
         ('Timeline', {
             'fields': ('project_date', 'deadline')
         }),
-        ('Additional', {
-            'fields': ('budget', 'special_instructions')
+        ('Financials', {
+            'fields': ('estimated_budget', 'agreed_amount', 'part_payment', 'balance_due', 'special_instructions')
         }),
         ('Workflow', {
             'fields': ('status', 'sent_to_production', 'sent_to_production_at')

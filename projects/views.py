@@ -227,9 +227,26 @@ def upload_project(request):
         font_type = request.POST.get('font_type', 'Times New Roman')
         color_requirement = request.POST.get('color_requirement', 'b&w')
         paper_type = request.POST.get('paper_type', 'A4')
+        paper_size = request.POST.get('paper_size', '')
+        paper_weight = request.POST.get('paper_weight', '')
         binding_type = request.POST.get('binding_type', 'perfect')
+        line_spacing = request.POST.get('line_spacing', '')
+        isbn_required = request.POST.get('isbn_required', 'off') == 'on'
         special_instructions = request.POST.get('special_instructions', '')
-        budget = request.POST.get('budget', None)
+        estimated_budget = request.POST.get('estimated_budget', None)
+        agreed_amount = request.POST.get('agreed_amount', None)
+        part_payment_raw = request.POST.get('part_payment', '')
+        balance_due_raw = request.POST.get('balance_due', '')
+        
+        try:
+            part_payment = float(part_payment_raw) if part_payment_raw else 0.00
+        except ValueError:
+            part_payment = 0.00
+
+        try:
+            balance_due = float(balance_due_raw) if balance_due_raw else 0.00
+        except ValueError:
+            balance_due = 0.00
         
         # Validate file
         if 'manuscript_file' not in request.FILES:
@@ -247,15 +264,24 @@ def upload_project(request):
             project_description=project_description,
             client_name=client_name,
             client_contact=client_contact,
+            client_location=request.POST.get('client_location', ''),
+            delivery_location=request.POST.get('delivery_location', ''),
             project_date=project_date,
             deadline=deadline,
             number_of_copies=int(number_of_copies),
             font_type=font_type,
             color_requirement=color_requirement,
             paper_type=paper_type,
+            paper_size=paper_size,
+            paper_weight=paper_weight,
+            line_spacing=line_spacing,
+            isbn_required=isbn_required,
             binding_type=binding_type,
             special_instructions=special_instructions,
-            budget=budget if budget else None,
+            estimated_budget=estimated_budget if estimated_budget else None,
+            agreed_amount=agreed_amount if agreed_amount else None,
+            part_payment=float(part_payment or 0.00),
+            balance_due=float(balance_due or 0.00),
             manuscript_file=manuscript_file,
             created_by=request.user,
             status='submitted'

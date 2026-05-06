@@ -78,7 +78,21 @@ class Project(models.Model):
     paper_type = models.CharField(
         max_length=100,
         default='A4',
-        help_text='Paper size (A4, A3, Letter, etc.)'
+        help_text='Paper type or format (A4, A3, Letter, etc.)'
+    )
+    
+    paper_size = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text='Paper size (e.g., A4, A3, Letter)'
+    )
+    
+    paper_weight = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text='Paper weight (e.g., 80gsm, 100gsm)'
     )
     
     binding_type = models.CharField(
@@ -87,40 +101,45 @@ class Project(models.Model):
         default='perfect'
     )
     
+    isbn_required = models.BooleanField(
+        default=False,
+        help_text='Whether an ISBN is required for this project'
+    )
+    
     special_instructions = models.TextField(
         blank=True,
         null=True,
         help_text='Any special requirements or instructions'
     )
     
-    budget = models.DecimalField(
+    estimated_budget = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         blank=True,
         null=True,
-        help_text='Project budget if applicable'
+        help_text='Estimated budget for the project'
     )
     
-    # Financial Fields
-    project_amount = models.DecimalField(
+    agreed_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text='Agreed amount for the project'
+    )
+    
+    part_payment = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=0.00,
-        help_text='Total project amount'
+        help_text='Part payment amount paid so far'
     )
     
-    amount_paid = models.DecimalField(
+    balance_due = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=0.00,
-        help_text='Amount paid so far'
-    )
-    
-    balance_remaining = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        default=0.00,
-        help_text='Balance remaining to be paid'
+        help_text='Balance due for the project'
     )
     
     # Status & Workflow

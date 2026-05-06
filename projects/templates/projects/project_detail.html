@@ -313,6 +313,11 @@
         </div>
 
         <div class="spec-card">
+            <div class="spec-label">Line Spacing</div>
+            <div class="spec-value">{{ project.line_spacing|default:'N/A' }}</div>
+        </div>
+
+        <div class="spec-card">
             <div class="spec-label">Font Type</div>
             <div class="spec-value">{{ project.font_type }}</div>
         </div>
@@ -328,16 +333,48 @@
         </div>
 
         <div class="spec-card">
+            <div class="spec-label">Paper Size</div>
+            <div class="spec-value">{{ project.paper_size|default:'N/A' }}</div>
+        </div>
+
+        <div class="spec-card">
+            <div class="spec-label">Paper Weight</div>
+            <div class="spec-value">{{ project.paper_weight|default:'N/A' }}</div>
+        </div>
+
+        <div class="spec-card">
             <div class="spec-label">Binding Type</div>
             <div class="spec-value">{{ project.get_binding_type_display }}</div>
         </div>
 
-        {% if project.budget %}
         <div class="spec-card">
-            <div class="spec-label">Budget</div>
-            <div class="spec-value">${{ project.budget }}</div>
+            <div class="spec-label">ISBN Required</div>
+            <div class="spec-value">{{ project.isbn_required|yesno:"Yes,No" }}</div>
+        </div>
+
+        {% if project.estimated_budget %}
+        <div class="spec-card">
+            <div class="spec-label">Estimated Budget</div>
+            <div class="spec-value">₦{{ project.estimated_budget|floatformat:2 }}</div>
         </div>
         {% endif %}
+
+        {% if project.agreed_amount %}
+        <div class="spec-card">
+            <div class="spec-label">Agreed Amount</div>
+            <div class="spec-value">₦{{ project.agreed_amount|floatformat:2 }}</div>
+        </div>
+        {% endif %}
+
+        <div class="spec-card">
+            <div class="spec-label">Part Payment</div>
+            <div class="spec-value">₦{{ project.part_payment|floatformat:2 }}</div>
+        </div>
+
+        <div class="spec-card">
+            <div class="spec-label">Balance Due</div>
+            <div class="spec-value">₦{{ project.balance_due|floatformat:2 }}</div>
+        </div>
     </div>
 
     {% if source_job_order %}
