@@ -569,6 +569,9 @@
                         {% if project.source_job_order %}
                             <a href="{% url 'projects:print_project_order' project.id %}" class="btn btn-secondary btn-action" target="_blank">🖨️ Print</a>
                         {% endif %}
+                        {% if project.manuscript_file %}
+                            <a href="{% url 'projects:download_project' project.id %}" class="btn btn-secondary btn-action">⬇️ Download</a>
+                        {% endif %}
                         {% if not project.sent_to_production %}
                             <button onclick="sendToProduction({{ project.id }})" class="btn btn-primary btn-action">✈️ Send</button>
                         {% else %}
