@@ -171,7 +171,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Use your custom login page (NOT admin)
 LOGIN_URL = '/accounts/login/'
 
-# After successful login, go to smart dashboard router (checks user role)
+# After successful login, send users to the router that selects the right dashboard by role
 LOGIN_REDIRECT_URL = '/'
 
 # After logout, go back to login page

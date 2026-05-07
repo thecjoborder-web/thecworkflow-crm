@@ -568,7 +568,57 @@ def is_sales_agent(user):
 @login_required
 @user_passes_test(is_sales_agent)
 def sales_dashboard(request):
-    return redirect('dashboards:job_order_home')
+    user = request.user
+
+    user_leads = Lead.objects.filter(assigned_to=user)
+    total_leads = user_leads.count()
+    active_leads = user_leads.exclude(status__in=['closed', 'lost']).count()
+    awaiting_count = user_leads.filter(status='awaiting').count()
+    closed_count = user_leads.filter(status='closed').count()
+    conversion_rate = (closed_count / total_leads * 100) if total_leads > 0 else 0
+    activities_today = LeadActivity.objects.filter(
+        user=user,
+        created_at__date=date.today()
+    ).count()
+
+    date_filter = request.GET.get('date_filter', 'all')
+    job_orders = JobOrder.objects.filter(created_by=user).order_by('-created_at')
+
+    if date_filter == 'today':
+        job_orders = job_orders.filter(created_at__date=date.today())
+    elif date_filter == 'week':
+        week_start = date.today() - timedelta(days=date.today().weekday())
+        job_orders = job_orders.filter(created_at__date__gte=week_start)
+    elif date_filter == 'month':
+        month_start = date.today().replace(day=1)
+        job_orders = job_orders.filter(created_at__date__gte=month_start)
+
+    total_job_orders = job_orders.count()
+    active_job_orders = job_orders.exclude(status='closed').count()
+    sent_job_orders = job_orders.filter(status='sent_to_project').count()
+    closed_job_orders = job_orders.filter(status='closed').count()
+
+    context = {
+        'total_leads': total_leads,
+        'active_leads': active_leads,
+        'awaiting_count': awaiting_count,
+        'closed_count': closed_count,
+        'conversion_rate': round(conversion_rate, 1),
+        'activities_today': activities_today,
+        'job_orders': job_orders,
+        'total_job_orders': total_job_orders,
+        'active_job_orders': active_job_orders,
+        'sent_job_orders': sent_job_orders,
+        'closed_job_orders': closed_job_orders,
+        'date_filter': date_filter,
+        'assigned_leads': user_leads.filter(status='assigned'),
+        'contacted_leads': user_leads.filter(status='contacted'),
+        'awaiting_leads': user_leads.filter(status='awaiting'),
+        'closed_leads': user_leads.filter(status='closed'),
+        'lost_leads': user_leads.filter(status='lost'),
+    }
+
+    return render(request, 'dashboards/sales_dashboard.html', context)
 
 
 @login_required
@@ -681,10 +731,10 @@ def send_job_order_to_project(request, order_id):
         paper_type=job_order.paper_type or 'A4',
         binding_type=job_order.binding or 'perfect',
         special_instructions=job_order.special_instructions or '',
-        budget=job_order.agreed_amount or 0.00,
-        project_amount=job_order.agreed_amount or 0.00,
-        amount_paid=job_order.part_payment or 0.00,
-        balance_remaining=job_order.balance_due or 0.00,
+        estimated_budget=job_order.estimated_budget or 0.00,
+        agreed_amount=job_order.agreed_amount or 0.00,
+        part_payment=job_order.part_payment or 0.00,
+        balance_due=job_order.balance_due or 0.00,
         manuscript_file=job_order.manuscript_file if job_order.manuscript_file else None,
         created_by=request.user,
         source_job_order=job_order,

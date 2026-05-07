@@ -37,7 +37,7 @@ def dashboard_router(request):
 
     # Sales Dashboard
     if user.groups.filter(name='sales_agent').exists():
-        return redirect('/dashboard/job-order/')
+        return redirect('/dashboard/sales/')
 
     # Default fallback: if authenticated but no known role, send to login
     return redirect('/accounts/login/')
