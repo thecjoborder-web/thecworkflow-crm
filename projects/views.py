@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime, date, timedelta
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -183,7 +184,7 @@ def project_detail(request, project_id):
         'project': project,
         'status_logs': status_logs,
         'can_edit': is_project_supervisor(request.user),
-        'can_download': is_production_staff(request.user) and project.sent_to_production,
+        'can_download': (is_project_supervisor(request.user) or is_production_staff(request.user)) and project.sent_to_production,
         'source_job_order': project.source_job_order,
     }
     
@@ -350,7 +351,7 @@ def send_to_production(request, project_id):
 # ==================== DOWNLOAD PROJECT (FILE SERVE) ====================
 
 @login_required
-@user_passes_test(is_production_staff)
+@user_passes_test(lambda user: is_production_staff(user) or is_project_supervisor(user))
 def download_project(request, project_id):
     """
     Download project manuscript file
@@ -382,8 +383,9 @@ def download_project(request, project_id):
         # Serve the file
         if project.manuscript_file:
             file_path = project.manuscript_file.path
+            filename = os.path.basename(file_path)
             response = FileResponse(open(file_path, 'rb'))
-            response['Content-Disposition'] = f'attachment; filename="{project.project_title}_manuscript"'
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
             return response
         else:
             return HttpResponse("File not found", status=404)

@@ -453,7 +453,7 @@
             {% if can_download %}
             <a href="{% url 'projects:download_project' project.id %}" class="btn btn-primary">⬇️ Download File</a>
             {% else %}
-            <span style="color: #999; font-size: 13px;">Only Production staff can download</span>
+            <span style="color: #999; font-size: 13px;">Only Production staff and Project Supervisors can download</span>
             {% endif %}
         </div>
     </div>
