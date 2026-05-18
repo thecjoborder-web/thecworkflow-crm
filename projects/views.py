@@ -355,15 +355,15 @@ def send_to_production(request, project_id):
 def download_project(request, project_id):
     """
     Download project manuscript file
-    Only if sent_to_production=True
+    Available after file is uploaded (no production requirement)
     Logs download activity
     """
     try:
         project = get_object_or_404(Project, id=project_id)
         
-        # WORKFLOW RESTRICTION: Only download if sent to production
-        if not project.sent_to_production:
-            return HttpResponse("This project has not been sent to production yet.", status=403)
+        # Check if manuscript exists
+        if not project.manuscript_file:
+            return HttpResponse("No manuscript uploaded.", status=404)
         
         # Log download
         ProjectDownloadLog.objects.create(
@@ -376,19 +376,16 @@ def download_project(request, project_id):
             project=project,
             notification_type='downloaded',
             title=f'Project downloaded',
-            message=f'Production staff downloaded "{project.project_title}"',
+            message=f'"{project.project_title}" manuscript downloaded by {request.user.get_full_name() or request.user.username}',
             recipient=project.created_by
         )
         
         # Serve the file
-        if project.manuscript_file:
-            file_path = project.manuscript_file.path
-            filename = os.path.basename(file_path)
-            response = FileResponse(open(file_path, 'rb'))
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            return response
-        else:
-            return HttpResponse("File not found", status=404)
+        file_path = project.manuscript_file.path
+        filename = os.path.basename(file_path)
+        response = FileResponse(open(file_path, 'rb'))
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
             
     except Exception as e:
         print(f'🚨 Error downloading project: {str(e)}')
