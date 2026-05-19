@@ -210,12 +210,14 @@ def print_project_order(request, project_id):
 
 @login_required
 @user_passes_test(is_project_supervisor)
-@require_POST
 def upload_project(request):
     """
     AJAX endpoint for uploading new projects
     Expects form data with file upload
     """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
     try:
         # Get all form data
         project_title = request.POST.get('project_title')

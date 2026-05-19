@@ -616,19 +616,29 @@ document.getElementById('upload-form').addEventListener('submit', async (e) => {
     try {
         const response = await fetch("{% url 'projects:upload_project' %}", {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
-                'X-CSRFToken': csrftoken
+                'X-CSRFToken': csrftoken,
+                'Accept': 'application/json'
             },
             body: formData
         });
 
-        const data = await response.json();
+        let data;
+        const contentType = response.headers.get('Content-Type') || '';
+
+        if (contentType.includes('application/json')) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            data = { error: text || 'Server returned an unexpected response format.' };
+        }
 
         if (response.ok) {
             document.getElementById('modal-message').textContent = data.message;
             document.getElementById('upload-modal').classList.add('active');
         } else {
-            alert('❌ Error: ' + data.error);
+            alert('❌ Error: ' + (data.error || 'Unknown error'));
         }
     } catch (error) {
         console.error('Error:', error);
@@ -645,20 +655,30 @@ async function sendToProduction(projectId) {
     try {
         const response = await fetch(`/projects/${projectId}/send-to-production/`, {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': csrftoken
+                'X-CSRFToken': csrftoken,
+                'Accept': 'application/json'
             },
             body: JSON.stringify({})
         });
 
-        const data = await response.json();
+        let data;
+        const contentType = response.headers.get('Content-Type') || '';
+
+        if (contentType.includes('application/json')) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            data = { error: text || 'Server returned an unexpected response format.' };
+        }
 
         if (response.ok) {
             alert('✅ ' + data.message);
             location.reload();
         } else {
-            alert('❌ Error: ' + data.error);
+            alert('❌ Error: ' + (data.error || 'Unknown error'));
         }
     } catch (error) {
         console.error('Error:', error);
