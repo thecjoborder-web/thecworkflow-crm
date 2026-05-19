@@ -40,6 +40,18 @@ class Project(models.Model):
     # Client Info
     client_name = models.CharField(max_length=255)
     client_contact = models.CharField(max_length=100, blank=True, null=True)
+    client_location = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text='Client address or location'
+    )
+    delivery_location = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text='Delivery address or location'
+    )
     
     # File Upload
     manuscript_file = models.FileField(
@@ -140,6 +152,13 @@ class Project(models.Model):
         decimal_places=2,
         default=0.00,
         help_text='Balance due for the project'
+    )
+
+    line_spacing = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text='Line spacing for the manuscript (e.g., single, 1.5, double)'
     )
     
     # Status & Workflow
